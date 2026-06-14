@@ -1,290 +1,88 @@
-# SwiftUI Screenshot Generator 仕様書
+# ScreenshotKit 仕様書
 
-## 1. 概要
+## 概要
 
-本システムは SwiftUI アプリ向けの App Store スクリーンショット自動生成システムである。
+ScreenshotKit は iOS SwiftUI アプリ内で App Store 用スクリーンショットを一括生成する。
+Shell は `simctl openurl` で `screenshot/start` を 1 回送るだけとし、実際のキャプチャと保存はアプリ内で完結させる。
 
-UI Test や環境変数は使用せず、Shell Script と `simctl openurl` / `simctl screenshot` により、スクリーンショット対象 View の表示切替と撮影を行う。
+## 基本方針
 
----
+- UI Test は使わない
+- `simctl screenshot` は使わない
+- `screenshot/start` を受けたら全 locale × 全 scene を自動巡回する
+- キャプチャは現在表示中の UIKit view をそのまま PNG 化する
+- サイズは固定値を持たず、起動中デバイスの実描画サイズを使う
+- locale 一覧は `Bundle` の localizations を正とする
+- 保存先構造は `<session>/<deviceName>/<locale>/<id>.png`
 
-# 2. 基本方針
-
-- UI Test は使用しない
-- 環境変数は使用しない
-- Root View の `if` 分岐は使用しない
-- スクリーンショット制御は URL Scheme で行う
-- Screenshot View は ResultBuilder で登録する
-- App 側がスクショ一覧・ファイル名・終了判定を持つ
-- Shell 側はシーン数を知らない
-- 画像保存は `xcrun simctl io booted screenshot` で行う
-
----
-
-# 3. 最終 API
+## 公開 API
 
 ```swift
 AppRootView()
-    .screenshot {
-        MyHomeScreenshot()
-        MyDetailScreenshot()
-        PremiumScreenshot()
+    .screenshot(urlScheme: "myapp") {
+        HomeScreenshot()
+        DetailScreenshot()
     }
 ```
 
----
-
-# 4. Screenshot Item
-
-スクリーンショット 1 枚分は独立した `ScreenshotItem` として定義する。
-
 ```swift
-protocol ScreenshotItem: View {
+public protocol ScreenshotItem: View, Sendable {
     static var id: String { get }
-    static var filename: String { get }
 }
 ```
-
-例:
-
-```swift
-struct MyHomeScreenshot: ScreenshotItem {
-    static let id = "home"
-    static let filename = "01_home"
-
-    var body: some View {
-        ScreenshotView(
-            title: "ホーム",
-            subtitle: "すべてを一箇所で管理"
-        ) {
-            MyHomeContent(fixture: .home)
-        }
-        .background {
-            LinearGradient(...)
-        }
-    }
-}
-```
-
----
-
-# 5. Screenshot Registration
-
-`RootView` に `.screenshot {}` をアタッチして、撮影対象 View を登録する。
-
-```swift
-AppRootView()
-    .screenshot {
-        MyHomeScreenshot()
-        MyDetailScreenshot()
-        PremiumScreenshot()
-    }
-```
-
-登録順が撮影順になる。
-
----
-
-# 6. Screenshot Host
-
-`.screenshot {}` Modifier は、通常時は元の `AppRootView` を表示する。
-
-URL Scheme で `screenshot/start` を受け取った場合のみ、内部的に Screenshot Host を表示する。
-
-Root View 側で以下のような分岐は書かない。
-
-```swift
-// 不要
-if isScreenshotMode {
-    ScreenshotRootView()
-} else {
-    AppRootView()
-}
-```
-
-切り替え責務は `.screenshot {}` Modifier が持つ。
-
----
-
-# 7. URL Scheme
-
-## 7.1 開始
-
-```bash
-xcrun simctl openurl booted "myapp://screenshot/start"
-```
-
-この URL を受け取ると、Screenshot Host を表示し、最初の Screenshot Item を表示する。
-
-## 7.2 次へ
-
-```bash
-xcrun simctl openurl booted "myapp://screenshot/next"
-```
-
-次の Screenshot Item に切り替える。
-
-最後の Item の次へ進もうとした場合は、終了状態にする。
-
----
-
-# 8. State File
-
-App は現在のスクリーンショット状態を `Application Support/screenshot_state.json` に書き出す。
-
-```json
-{
-  "id": "home",
-  "filename": "01_home",
-  "finished": false
-}
-```
-
-終了時:
-
-```json
-{
-  "finished": true
-}
-```
-
----
-
-# 9. Shell 側の State File 取得
-
-Shell は `simctl get_app_container` で App の Data Container を取得する。
-
-```bash
-APP_CONTAINER=$(
-  xcrun simctl get_app_container booted com.example.app data
-)
-
-STATE_FILE="$APP_CONTAINER/Library/Application Support/screenshot_state.json"
-```
-
----
-
-# 10. Screenshot 撮影
-
-画像保存は Shell 側で行う。
-
-```bash
-xcrun simctl io booted screenshot "Screenshots/01_home.png"
-```
-
-Swift 側では画像保存しない。
-
----
-
-# 11. Shell Script
-
-```bash
-#!/bin/bash
-
-set -e
-
-BUNDLE_ID="com.example.app"
-URL_SCHEME="myapp"
-OUT_DIR="./Screenshots"
-
-mkdir -p "$OUT_DIR"
-
-APP_CONTAINER=$(
-  xcrun simctl get_app_container booted "$BUNDLE_ID" data
-)
-
-STATE_FILE="$APP_CONTAINER/Library/Application Support/screenshot_state.json"
-
-xcrun simctl openurl booted "$URL_SCHEME://screenshot/start"
-
-sleep 1
-
-while true
-do
-  finished=$(jq -r '.finished' "$STATE_FILE")
-
-  if [ "$finished" = "true" ]; then
-    echo "Screenshot finished"
-    break
-  fi
-
-  filename=$(jq -r '.filename' "$STATE_FILE")
-
-  xcrun simctl io booted screenshot "$OUT_DIR/${filename}.png"
-
-  xcrun simctl openurl booted "$URL_SCHEME://screenshot/next"
-
-  sleep 1
-done
-```
-
----
-
-# 12. ScreenshotView
-
-`ScreenshotView` は App Store 用レイアウトを提供する。
 
 ```swift
 ScreenshotView(
-    title: "タイトル",
-    subtitle: "サブタイトル"
+    id: "home",
+    title: "ホーム",
+    subtitle: "すべてを一箇所で管理"
 ) {
-    ContentView()
+    HomeContentView()
 }
 ```
 
-管理対象:
+- `ScreenshotItem.id`
+  - scene の内部識別子
+- `ScreenshotView.id`
+  - 保存ファイル名に使う識別子
+  - 省略時は `001`, `002`, ... を自動採番する
 
-- title
-- subtitle
-- background
-- overlay
-- content
-- safe area
-- scale
+## 起動フロー
 
----
-
-# 13. 責務分離
-
-| 領域 | 責務 |
-|---|---|
-| App | Screenshot View 登録 |
-| App | 現在の Screenshot Item 管理 |
-| App | filename / finished の書き出し |
-| Shell | start / next の送信 |
-| Shell | state JSON 読み取り |
-| Shell | PNG 保存 |
-| simctl | URL Scheme 実行・スクショ撮影 |
-
----
-
-# 14. メリット
-
-- UI Test 不要
-- 環境変数不要
-- Root View の分岐不要
-- Shell 側にシーン定義不要
-- SwiftUI らしい宣言的 API
-- 1 Screenshot = 1 View 型で管理できる
-- Preview しやすい
-- CI/CD に組み込みやすい
-
----
-
-# 15. 最終形
-
-```swift
-AppRootView()
-    .screenshot {
-        MyHomeScreenshot()
-        MyDetailScreenshot()
-        PremiumScreenshot()
-    }
-```
+Shell から以下を送る。
 
 ```bash
-xcrun simctl openurl booted "myapp://screenshot/start"
-xcrun simctl io booted screenshot "./Screenshots/01_home.png"
-xcrun simctl openurl booted "myapp://screenshot/next"
+xcrun simctl openurl booted "myapp://screenshot/start?deviceName=iPhone%2016%20Pro"
 ```
+
+アプリ側の動作:
+
+1. `deviceName` を取り出す
+2. `Bundle` から locale 一覧を取得する
+3. `locale × scene` のジョブ列を作る
+4. 1件ずつ表示する
+5. 描画済み View そのものを保存する
+6. 全件完了後に完了マーカーを書き出す
+
+## 保存仕様
+
+- セッションルートは `Application Support/ScreenshotKit/Sessions/session-<timestamp>/`
+- 画像保存先は `<session>/<deviceName>/<locale>/<id>.png`
+- 完了時は `<session>/capture-complete`
+- 失敗時は `<session>/capture-error.txt`
+- 完了時は `<session>/manifest.json`
+- 最新セッション参照用に `Application Support/ScreenshotKit/Sessions/latest-session.txt` を更新する
+
+## Shell の責務
+
+- `screenshot/start` を 1 回送る
+- `latest-session.txt` と `capture-complete` を見て完了を待つ
+- 完成済みセッションから `<deviceName>/` 以下をユーザー指定先、未指定時は `./output` にコピーする
+
+Shell は以下を持たない。
+
+- scene 数の知識
+- locale 数の知識
+- 画像撮影責務
+- `next` の送信責務
+- JSON 状態読み取り責務

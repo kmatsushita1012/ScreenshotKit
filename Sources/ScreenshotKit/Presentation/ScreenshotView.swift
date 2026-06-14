@@ -1,0 +1,151 @@
+//
+//  ScreenshotView.swift
+//  ScreenshotKit
+//
+
+import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
+
+public struct ScreenshotView<Title: View, Subtitle: View, Content: View, Background: View>: View {
+    private let outputIdentifier: String?
+    private let titleView: () -> Title
+    private let subtitleView: () -> Subtitle
+    private let contentBuilder: () -> Content
+    private let backgroundBuilder: () -> Background
+
+    public init(
+        id: String? = nil,
+        @ViewBuilder title: @escaping () -> Title,
+        @ViewBuilder subtitle: @escaping () -> Subtitle,
+        @ViewBuilder content: @escaping () -> Content,
+        @ViewBuilder background: @escaping () -> Background
+    ) {
+        self.outputIdentifier = id
+        self.titleView = title
+        self.subtitleView = subtitle
+        self.contentBuilder = content
+        self.backgroundBuilder = background
+    }
+
+    public var body: some View {
+        ZStack {
+            backgroundBuilder()
+                .ignoresSafeArea()
+
+            GeometryReader { proxy in
+                VStack(alignment: .center, spacing: 24) {
+                    VStack(spacing: 8) {
+                        titleView()
+                            .multilineTextAlignment(.center)
+                        subtitleView()
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding(.horizontal)
+
+                    VStack(spacing: 0) {
+                        Capsule(style: .continuous)
+                            .frame(width: 100, height: 30)
+                            .padding(.top)
+                        contentBuilder()
+                    }
+                    .frame(width: proxy.size.width, height: proxy.size.height)
+                    .background(platformSystemBackgroundColor)
+                    .clipShape(roundedRectangle)
+                    .overlay(
+                        roundedRectangle
+                            .stroke(platformBorderColor, lineWidth: 8)
+                    )
+                    .overlay(
+                        roundedRectangle
+                            .stroke(.black, lineWidth: 4)
+                    )
+                    .scaleEffect(0.7)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+        .preference(
+            key: ScreenshotOutputIdentifierPreferenceKey.self,
+            value: outputIdentifier
+        )
+    }
+}
+
+struct ScreenshotOutputIdentifierPreferenceKey: PreferenceKey {
+    static var defaultValue: String? { nil }
+
+    static func reduce(value: inout String?, nextValue: () -> String?) {
+        value = nextValue() ?? value
+    }
+}
+
+private let roundedRectangle = RoundedRectangle(cornerRadius: 44, style: .continuous)
+#if canImport(UIKit)
+private let platformSystemBackgroundColor = Color(.systemBackground)
+private let platformBorderColor = Color(uiColor: UIColor.darkGray)
+#else
+private let platformSystemBackgroundColor = Color.white
+private let platformBorderColor = Color.gray
+#endif
+
+public extension ScreenshotView where Title == AnyView, Subtitle == AnyView {
+    init(
+        id: String? = nil,
+        title: String,
+        subtitle: String,
+        @ViewBuilder content: @escaping () -> Content,
+        @ViewBuilder background: @escaping () -> Background
+    ) {
+        self.init(
+            id: id,
+            title: {
+                AnyView(
+                    Text(title)
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                )
+            },
+            subtitle: {
+                AnyView(
+                    Text(subtitle)
+                        .font(.title3)
+                        .foregroundStyle(.secondary)
+                )
+            },
+            content: content,
+            background: background
+        )
+    }
+}
+
+public extension ScreenshotView where Background == Color, Title == AnyView, Subtitle == AnyView {
+    init(
+        id: String? = nil,
+        title: String,
+        subtitle: String,
+        background: Color = .black,
+        @ViewBuilder content: @escaping () -> Content
+    ) {
+        self.init(
+            id: id,
+            title: {
+                AnyView(
+                    Text(title)
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                )
+            },
+            subtitle: {
+                AnyView(
+                    Text(subtitle)
+                        .font(.title2)
+                        .foregroundStyle(.primary)
+                )
+            },
+            content: content,
+            background: { background }
+        )
+    }
+}
