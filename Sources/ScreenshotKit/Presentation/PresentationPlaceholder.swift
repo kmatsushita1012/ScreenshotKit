@@ -235,6 +235,7 @@ final class ScreenshotContainerViewModel: ObservableObject {
 
         activeCaptureKey = captureKey
         isCaptureRunning = true
+        print("ScreenshotKit capturing job: \(currentJob.id)")
 
         do {
             let outputIdentifier = sanitizedOutputIdentifier(
@@ -263,6 +264,7 @@ final class ScreenshotContainerViewModel: ObservableObject {
 
     private func advanceToNextJob(from sessionDirectoryURL: URL) {
         if pendingJobs.isEmpty {
+            print("ScreenshotKit finished all capture jobs")
             currentJob = nil
             isFinished = true
             currentCaptureSource = nil
@@ -286,6 +288,9 @@ final class ScreenshotContainerViewModel: ObservableObject {
         }
 
         currentJob = pendingJobs.removeFirst()
+        if let currentJob {
+            print("ScreenshotKit advancing to next job: \(currentJob.id)")
+        }
         currentCaptureSource = nil
         isCaptureRunning = false
         activeCaptureKey = nil
@@ -482,6 +487,7 @@ private struct LiveRenderedScreenshotScene: UIViewControllerRepresentable {
 
     private func makeRootView(for coordinator: Coordinator) -> CaptureMetadataReportingRoot {
         CaptureMetadataReportingRoot(
+            taskID: taskID,
             content: AnyView(
                 content.environment(\.locale, Locale(identifier: localeIdentifier))
             ),
@@ -554,6 +560,7 @@ private final class CaptureHostingViewController: UIHostingController<CaptureMet
 }
 
 private struct CaptureMetadataReportingRoot: View {
+    let taskID: String
     let content: AnyView
     let onOutputIdentifierResolved: (String?) -> Void
 
@@ -561,6 +568,7 @@ private struct CaptureMetadataReportingRoot: View {
 
     var body: some View {
         content
+            .id(taskID)
             .onPreferenceChange(ScreenshotOutputIdentifierPreferenceKey.self) { value in
                 guard !hasResolvedOutputIdentifier else { return }
                 hasResolvedOutputIdentifier = true
