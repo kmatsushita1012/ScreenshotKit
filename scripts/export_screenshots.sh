@@ -56,7 +56,10 @@ def run(cmd):
     return subprocess.check_output(cmd, cwd=root, text=True)
 
 projects = []
-for base, _, files in os.walk(root):
+for base, dirs, files in os.walk(root):
+    for name in dirs:
+        if name.endswith(".xcodeproj"):
+            projects.append(os.path.join(base, name))
     for name in files:
         if name.endswith(".xcodeproj"):
             projects.append(os.path.join(base, name))
@@ -100,6 +103,7 @@ print(json.dumps({
     "project": project,
     "scheme": scheme,
     "bundle_id": bundle_id,
+    "full_product_name": target_settings.get("FULL_PRODUCT_NAME", f"{scheme}.app"),
 }))
 PY
 }
@@ -270,6 +274,29 @@ boot_device() {
   xcrun simctl bootstatus "$udid" -b
 }
 
+build_app() {
+  local project_path="$1"
+  local scheme="$2"
+  local derived_data_path="$3"
+
+  xcodebuild build \
+    -project "$project_path" \
+    -scheme "$scheme" \
+    -configuration Debug \
+    -destination 'generic/platform=iOS Simulator' \
+    -derivedDataPath "$derived_data_path" \
+    CODE_SIGNING_ALLOWED=NO
+}
+
+install_app() {
+  local udid="$1"
+  local bundle_id="$2"
+  local app_path="$3"
+
+  xcrun simctl uninstall "$udid" "$bundle_id" >/dev/null 2>&1 || true
+  xcrun simctl install "$udid" "$app_path"
+}
+
 run_capture_for_device() {
   local bundle_id="$1"
   local udid="$2"
@@ -316,13 +343,20 @@ run_capture_for_device() {
 }
 
 PROJECT_SETTINGS_JSON="$(infer_project_settings)"
+PROJECT_PATH="$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])["project"])' "$PROJECT_SETTINGS_JSON")"
+SCHEME_NAME="$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])["scheme"])' "$PROJECT_SETTINGS_JSON")"
 BUNDLE_ID="$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])["bundle_id"])' "$PROJECT_SETTINGS_JSON")"
+FULL_PRODUCT_NAME="$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])["full_product_name"])' "$PROJECT_SETTINGS_JSON")"
+DERIVED_DATA_PATH="$PWD/.build/example-derived-data"
+APP_PATH="$DERIVED_DATA_PATH/Build/Products/Debug-iphonesimulator/$FULL_PRODUCT_NAME"
 mkdir -p "$OUTPUT_ROOT"
 
 if [ -n "$DEVICE_ID_OVERRIDE" ]; then
   DEVICE_INFO_JSON="$(get_device_info "$DEVICE_ID_OVERRIDE")"
   TARGET_DEVICE_NAME="$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])["name"])' "$DEVICE_INFO_JSON")"
   boot_device "$DEVICE_ID_OVERRIDE"
+  build_app "$PROJECT_PATH" "$SCHEME_NAME" "$DERIVED_DATA_PATH"
+  install_app "$DEVICE_ID_OVERRIDE" "$BUNDLE_ID" "$APP_PATH"
   run_capture_for_device "$BUNDLE_ID" "$DEVICE_ID_OVERRIDE" "$TARGET_DEVICE_NAME" "$OUTPUT_ROOT"
   exit 0
 fi
@@ -343,6 +377,9 @@ IPAD_UDID="$(ensure_device "$RUNTIME_ID" "$IPAD_NAME" "$IPAD_TYPE_ID" "$IPAD_UDI
 
 boot_device "$IPHONE_UDID"
 boot_device "$IPAD_UDID"
+build_app "$PROJECT_PATH" "$SCHEME_NAME" "$DERIVED_DATA_PATH"
+install_app "$IPHONE_UDID" "$BUNDLE_ID" "$APP_PATH"
+install_app "$IPAD_UDID" "$BUNDLE_ID" "$APP_PATH"
 
 run_capture_for_device "$BUNDLE_ID" "$IPHONE_UDID" "$IPHONE_NAME" "$OUTPUT_ROOT" &
 iphone_pid=$!

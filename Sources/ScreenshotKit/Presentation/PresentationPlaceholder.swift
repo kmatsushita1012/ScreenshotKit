@@ -422,6 +422,7 @@ struct ScreenshotHostView: View {
                 content: view,
                 onCaptureSourceReady: onCaptureSourceReady
             )
+            .id(currentJob.id)
         } else {
             Text("No current screenshot item")
                 .padding()
@@ -568,7 +569,6 @@ private struct CaptureMetadataReportingRoot: View {
 
     var body: some View {
         content
-            .id(taskID)
             .onPreferenceChange(ScreenshotOutputIdentifierPreferenceKey.self) { value in
                 guard !hasResolvedOutputIdentifier else { return }
                 hasResolvedOutputIdentifier = true
