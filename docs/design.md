@@ -18,7 +18,7 @@
 - `Infrastructure`
   - `ScreenshotURLParser` が `deviceName` 付き URL を解釈する
   - `ScreenshotLocaleProvider` が `Bundle` から locale 一覧を返す
-  - `ScreenshotProgressStore` がセッション作成、PNG 保存、manifest、完了/失敗マーカー書き込みを行う
+- `ScreenshotProgressStore` がセッション作成、PNG 保存、manifest、完了/失敗マーカー書き込みを行う
 
 ## Domain Types
 
@@ -82,9 +82,13 @@ flowchart TD
 ## Decisions
 
 - locale 一覧は API 引数ではなく `Bundle` から自動取得する
+- URL 形式は `myapp://screenshot/start?...` と `myapp:/screenshots/start?...` の両方を受ける
+- Shell は `device-id` を指定された場合は 1 台のみ、未指定時は iPhone / iPad の 2 台を並列実行する
 - `ScreenshotItem.id` は内部 scene 識別用に維持する
 - 保存用 `id` は `ScreenshotView(id:)` に寄せる
 - `ScreenshotView(id:)` 未指定時は登録順で 3 桁連番を付与する
+- `ScreenshotView(image:)` は content 部分だけを asset 画像へ差し替える
+- 背景は `ScreenshotView` の initializer ではなく通常の `.background(...)` に寄せる
 - 保存は `id` 解決後に直列で進める
 - `next` は廃止し、外部から scene 進行を制御しない
 

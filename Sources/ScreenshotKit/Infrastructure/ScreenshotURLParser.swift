@@ -16,12 +16,10 @@ public struct ScreenshotURLParser: ScreenshotURLParserProtocol, Sendable {
 
     public func parse(_ url: URL, expectedScheme: String) -> ScreenshotRoute? {
         guard url.scheme == expectedScheme else { return nil }
-        guard url.host == "screenshot" else { return nil }
+        let commandName = commandName(from: url)
+        guard let commandName else { return nil }
 
-        let components = url.pathComponents.filter { $0 != "/" }
-        guard let last = components.last else { return nil }
-
-        switch last {
+        switch commandName {
         case "start":
             let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
             let deviceName = components?
@@ -34,6 +32,22 @@ public struct ScreenshotURLParser: ScreenshotURLParserProtocol, Sendable {
         default:
             return nil
         }
+    }
+
+    private func commandName(from url: URL) -> String? {
+        if url.host == "screenshot" {
+            let pathComponents = url.pathComponents.filter { $0 != "/" }
+            return pathComponents.last
+        }
+
+        let normalizedPath = url.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        let pathComponents = normalizedPath
+            .split(separator: "/")
+            .map(String.init)
+
+        guard pathComponents.count >= 2 else { return nil }
+        guard pathComponents[pathComponents.count - 2] == "screenshots" else { return nil }
+        return pathComponents.last
     }
 
     private func sanitizedDeviceName(_ deviceName: String?) -> String {

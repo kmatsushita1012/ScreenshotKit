@@ -61,6 +61,16 @@ func urlParserReadsAndSanitizesDeviceName() {
 }
 
 @Test
+func urlParserAlsoAcceptsScreenshotsPathStyle() {
+    let parser = ScreenshotURLParser()
+    let url = URL(string: "myapp:/screenshots/start?deviceName=iPad%20Pro")!
+
+    let route = parser.parse(url, expectedScheme: "myapp")
+
+    #expect(route?.command == .start(deviceName: "iPad Pro"))
+}
+
+@Test
 func localeProviderNormalizesCommonLanguageIdentifiers() {
     let provider = ScreenshotLocaleProvider(bundle: .moduleForTests(["ja", "en", "Base"]))
 

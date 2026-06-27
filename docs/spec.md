@@ -3,7 +3,7 @@
 ## 概要
 
 ScreenshotKit は iOS SwiftUI アプリ内で App Store 用スクリーンショットを一括生成する。
-Shell は `simctl openurl` で `screenshot/start` を 1 回送るだけとし、実際のキャプチャと保存はアプリ内で完結させる。
+Shell は Xcode プロジェクト情報を推定し、iPhone / iPad Simulator を boot したうえで `screenshots/start` を送る。実際のキャプチャと保存はアプリ内で完結させる。
 
 ## 基本方針
 
@@ -39,6 +39,21 @@ ScreenshotView(
 ) {
     HomeContentView()
 }
+.background(Color.black)
+
+ScreenshotView(
+    id: "alarm",
+    title: "アラーム",
+    subtitle: "拡張 UI をそのまま訴求",
+    image: "alarm"
+)
+.background(
+    LinearGradient(
+        colors: [.black, .blue],
+        startPoint: .top,
+        endPoint: .bottom
+    )
+)
 ```
 
 - `ScreenshotItem.id`
@@ -46,13 +61,18 @@ ScreenshotView(
 - `ScreenshotView.id`
   - 保存ファイル名に使う識別子
   - 省略時は `001`, `002`, ... を自動採番する
+- `ScreenshotView(image:)`
+  - `content` の代わりに app asset の画像を phone frame 内へ表示する
+  - widget や alarm extension など View 取得が難しい UI の代替に使う
+- 背景
+  - `ScreenshotView` 専用引数は使わず、通常の `.background(...)` で指定する
 
 ## 起動フロー
 
 Shell から以下を送る。
 
 ```bash
-xcrun simctl openurl booted "myapp://screenshot/start?deviceName=iPhone%2016%20Pro"
+xcrun simctl openurl <udid> "myapp:/screenshots/start?deviceName=iPhone%2017%20Pro%20Max"
 ```
 
 アプリ側の動作:
@@ -75,9 +95,14 @@ xcrun simctl openurl booted "myapp://screenshot/start?deviceName=iPhone%2016%20P
 
 ## Shell の責務
 
-- `screenshot/start` を 1 回送る
+- `.xcodeproj` から bundle ID と URL scheme を推定する
+- 利用可能な最新 iOS runtime を選ぶ
+- `device-id` が指定されたらその Simulator だけを boot して実行する
+- `device-id` が省略されたら iPhone / iPad の上位機種を 1 台ずつ boot する
+- 各 Simulator に対して `screenshots/start` を送る
 - `latest-session.txt` と `capture-complete` を見て完了を待つ
 - 完成済みセッションから `<deviceName>/` 以下をユーザー指定先、未指定時は `./output` にコピーする
+- `manifest.json` も回収する
 
 Shell は以下を持たない。
 

@@ -219,15 +219,11 @@ final class ScreenshotContainerViewModel: ObservableObject {
         isCaptureRunning = true
 
         do {
-            guard let captureView = currentCaptureSource.viewBox.view else {
-                throw ScreenshotKitError.captureFailed
-            }
-
             let outputIdentifier = sanitizedOutputIdentifier(
                 currentCaptureSource.outputIdentifier
             ) ?? currentJob.fallbackOutputIdentifier
 
-            let pngData = try renderPNGData(from: captureView)
+            let pngData = try renderPNGData(from: currentCaptureSource.capture)
             let sessionDirectoryURL = URL(fileURLWithPath: sessionDirectoryPath, isDirectory: true)
 
             let entry = try await progressStore.saveImage(
@@ -295,7 +291,11 @@ final class ScreenshotContainerViewModel: ObservableObject {
         }
     }
 
-    private func renderPNGData(from view: UIView) throws -> Data {
+    private func renderPNGData(from capture: DisplayedSceneCaptureKind) throws -> Data {
+        guard let view = capture.viewBox.view else {
+            throw ScreenshotKitError.captureFailed
+        }
+
         let bounds = view.bounds.integral
         guard !bounds.isEmpty else {
             throw ScreenshotKitError.captureFailed
@@ -408,7 +408,7 @@ struct ScreenshotHostView: View {
 struct DisplayedSceneCaptureSource {
     let taskID: String
     let outputIdentifier: String?
-    let viewBox: WeakUIViewBox
+    let capture: DisplayedSceneCaptureKind
 }
 
 @MainActor
@@ -417,6 +417,18 @@ final class WeakUIViewBox {
 
     init(view: UIView?) {
         self.view = view
+    }
+}
+
+@MainActor
+enum DisplayedSceneCaptureKind {
+    case liveView(WeakUIViewBox)
+
+    var viewBox: WeakUIViewBox {
+        switch self {
+        case let .liveView(viewBox):
+            return viewBox
+        }
     }
 }
 
@@ -504,7 +516,7 @@ private struct LiveRenderedScreenshotScene: UIViewControllerRepresentable {
                 DisplayedSceneCaptureSource(
                     taskID: taskID,
                     outputIdentifier: outputIdentifier,
-                    viewBox: viewBox
+                    capture: .liveView(viewBox)
                 )
             )
         }

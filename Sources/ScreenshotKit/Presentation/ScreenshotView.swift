@@ -13,59 +13,52 @@ public struct ScreenshotView<Title: View, Subtitle: View, Content: View, Backgro
     private let titleView: () -> Title
     private let subtitleView: () -> Subtitle
     private let contentBuilder: () -> Content
-    private let backgroundBuilder: () -> Background
 
     public init(
         id: String? = nil,
         @ViewBuilder title: @escaping () -> Title,
         @ViewBuilder subtitle: @escaping () -> Subtitle,
-        @ViewBuilder content: @escaping () -> Content,
-        @ViewBuilder background: @escaping () -> Background
+        @ViewBuilder content: @escaping () -> Content
     ) {
         self.outputIdentifier = id
         self.titleView = title
         self.subtitleView = subtitle
         self.contentBuilder = content
-        self.backgroundBuilder = background
     }
 
     public var body: some View {
-        ZStack {
-            backgroundBuilder()
-                .ignoresSafeArea()
-
-            GeometryReader { proxy in
-                VStack(alignment: .center, spacing: 24) {
-                    VStack(spacing: 8) {
-                        titleView()
-                            .multilineTextAlignment(.center)
-                        subtitleView()
-                            .multilineTextAlignment(.center)
-                    }
-                    .padding(.horizontal)
-
-                    VStack(spacing: 0) {
-                        Capsule(style: .continuous)
-                            .frame(width: 100, height: 30)
-                            .padding(.top)
-                        contentBuilder()
-                    }
-                    .frame(width: proxy.size.width, height: proxy.size.height)
-                    .background(platformSystemBackgroundColor)
-                    .clipShape(roundedRectangle)
-                    .overlay(
-                        roundedRectangle
-                            .stroke(platformBorderColor, lineWidth: 8)
-                    )
-                    .overlay(
-                        roundedRectangle
-                            .stroke(.black, lineWidth: 4)
-                    )
-                    .scaleEffect(0.7)
+        GeometryReader { proxy in
+            VStack(alignment: .center, spacing: 24) {
+                VStack(spacing: 8) {
+                    titleView()
+                        .multilineTextAlignment(.center)
+                    subtitleView()
+                        .multilineTextAlignment(.center)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(.horizontal)
+
+                VStack(spacing: 0) {
+                    Capsule(style: .continuous)
+                        .frame(width: 100, height: 30)
+                        .padding(.top)
+                    contentBuilder()
+                }
+                .frame(width: proxy.size.width, height: proxy.size.height)
+                .background(platformSystemBackgroundColor)
+                .clipShape(roundedRectangle)
+                .overlay(
+                    roundedRectangle
+                        .stroke(platformBorderColor, lineWidth: 8)
+                )
+                .overlay(
+                    roundedRectangle
+                        .stroke(.black, lineWidth: 4)
+                )
+                .scaleEffect(0.7)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .preference(
             key: ScreenshotOutputIdentifierPreferenceKey.self,
             value: outputIdentifier
@@ -90,13 +83,12 @@ private let platformSystemBackgroundColor = Color.white
 private let platformBorderColor = Color.gray
 #endif
 
-public extension ScreenshotView where Title == AnyView, Subtitle == AnyView {
+public extension ScreenshotView where Background == EmptyView, Title == AnyView, Subtitle == AnyView {
     init(
         id: String? = nil,
         title: String,
         subtitle: String,
-        @ViewBuilder content: @escaping () -> Content,
-        @ViewBuilder background: @escaping () -> Background
+        @ViewBuilder content: @escaping () -> Content
     ) {
         self.init(
             id: id,
@@ -114,38 +106,55 @@ public extension ScreenshotView where Title == AnyView, Subtitle == AnyView {
                         .foregroundStyle(.secondary)
                 )
             },
-            content: content,
-            background: background
+            content: content
         )
     }
 }
 
-public extension ScreenshotView where Background == Color, Title == AnyView, Subtitle == AnyView {
+public extension ScreenshotView where Background == EmptyView, Content == AnyView, Title == AnyView, Subtitle == AnyView {
     init(
         id: String? = nil,
         title: String,
         subtitle: String,
-        background: Color = .black,
-        @ViewBuilder content: @escaping () -> Content
+        image assetName: String,
+        imageBundle: Bundle? = .main
     ) {
         self.init(
             id: id,
-            title: {
+            title: title,
+            subtitle: subtitle,
+            content: {
                 AnyView(
-                    Text(title)
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
+                    Image(assetName, bundle: imageBundle)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .clipped()
                 )
-            },
-            subtitle: {
+            }
+        )
+    }
+}
+
+public extension ScreenshotView where Background == EmptyView, Content == AnyView, Title == EmptyView, Subtitle == EmptyView {
+    init(
+        id: String? = nil,
+        image assetName: String,
+        imageBundle: Bundle? = .main
+    ) {
+        self.init(
+            id: id,
+            title: { EmptyView() },
+            subtitle: { EmptyView() },
+            content: {
                 AnyView(
-                    Text(subtitle)
-                        .font(.title2)
-                        .foregroundStyle(.primary)
+                    Image(assetName, bundle: imageBundle)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .clipped()
                 )
-            },
-            content: content,
-            background: { background }
+            }
         )
     }
 }
