@@ -28,7 +28,8 @@ public struct ScreenshotView<Title: View, Subtitle: View, Content: View, Backgro
 
     public var body: some View {
         GeometryReader { proxy in
-            VStack(alignment: .center, spacing: 24) {
+            VStack(alignment: .center, spacing:24) {
+
                 VStack(spacing: 8) {
                     titleView()
                         .multilineTextAlignment(.center)
@@ -36,12 +37,13 @@ public struct ScreenshotView<Title: View, Subtitle: View, Content: View, Backgro
                         .multilineTextAlignment(.center)
                 }
                 .padding(.horizontal)
-
-                VStack(spacing: 0) {
+                ZStack{
+                    contentBuilder()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity,alignment: .center)
                     Capsule(style: .continuous)
                         .frame(width: 100, height: 30)
                         .padding(.top)
-                    contentBuilder()
+                        .frame(maxHeight: .infinity,alignment: .top)
                 }
                 .frame(width: proxy.size.width, height: proxy.size.height)
                 .background(platformSystemBackgroundColor)
@@ -55,6 +57,7 @@ public struct ScreenshotView<Title: View, Subtitle: View, Content: View, Backgro
                         .stroke(.black, lineWidth: 4)
                 )
                 .scaleEffect(0.7)
+
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
@@ -156,5 +159,16 @@ public extension ScreenshotView where Background == EmptyView, Content == AnyVie
                 )
             }
         )
+    }
+}
+
+
+#Preview {
+    ScreenshotView(title: "とても賢いアプリです", subtitle: "ダウンロード必須"){
+        VStack {
+            Text("Hello, World!")
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.mint)
     }
 }

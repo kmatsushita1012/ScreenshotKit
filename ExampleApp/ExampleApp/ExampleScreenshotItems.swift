@@ -35,6 +35,10 @@ struct WelcomeScreenshot: ScreenshotItem {
     }
 }
 
+＃Preview {
+    WelcomeScreenshot()
+}
+
 struct FeatureScreenshot: ScreenshotItem {
     static let id = "feature"
 
