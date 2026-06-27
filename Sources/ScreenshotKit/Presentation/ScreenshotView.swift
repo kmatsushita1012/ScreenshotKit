@@ -28,8 +28,29 @@ public struct ScreenshotView<Title: View, Subtitle: View, Content: View, Backgro
 
     public var body: some View {
         GeometryReader { proxy in
-            VStack(alignment: .center, spacing:24) {
-
+            ZStack{
+                contentBuilder()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity,alignment: .center)
+                Capsule(style: .continuous)
+                    .frame(width: 100, height: 30)
+                    .padding(.top)
+                    .frame(maxHeight: .infinity,alignment: .top)
+            }
+            .frame(width: proxy.size.width, height: proxy.size.height)
+            .background(platformSystemBackgroundColor)
+            .clipShape(roundedRectangle)
+            .overlay(
+                roundedRectangle
+                    .stroke(platformBorderColor, lineWidth: 8)
+            )
+            .overlay(
+                roundedRectangle
+                    .stroke(.black, lineWidth: 4)
+            )
+            .scaleEffect(0.7)
+            .offset(x: 0, y: proxy.size.height * 0.1)
+            
+            .overlay(alignment: .top) {
                 VStack(spacing: 8) {
                     titleView()
                         .multilineTextAlignment(.center)
@@ -37,29 +58,8 @@ public struct ScreenshotView<Title: View, Subtitle: View, Content: View, Backgro
                         .multilineTextAlignment(.center)
                 }
                 .padding(.horizontal)
-                ZStack{
-                    contentBuilder()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity,alignment: .center)
-                    Capsule(style: .continuous)
-                        .frame(width: 100, height: 30)
-                        .padding(.top)
-                        .frame(maxHeight: .infinity,alignment: .top)
-                }
-                .frame(width: proxy.size.width, height: proxy.size.height)
-                .background(platformSystemBackgroundColor)
-                .clipShape(roundedRectangle)
-                .overlay(
-                    roundedRectangle
-                        .stroke(platformBorderColor, lineWidth: 8)
-                )
-                .overlay(
-                    roundedRectangle
-                        .stroke(.black, lineWidth: 4)
-                )
-                .scaleEffect(0.7)
-
+                .offset(x: 0, y: proxy.size.height * 0.05)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .preference(
@@ -164,11 +164,21 @@ public extension ScreenshotView where Background == EmptyView, Content == AnyVie
 
 
 #Preview {
-    ScreenshotView(title: "とても賢いアプリです", subtitle: "ダウンロード必須"){
-        VStack {
-            Text("Hello, World!")
+    ScreenshotView(title: "とても賢いアプリです", subtitle: "ダウンロード必須ダウンロード必須"){
+        NavigationStack {
+            VStack {
+                Text("Hello, World!")
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color.mint)
+            .toolbar{
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("close", systemImage: "xmark") {
+                        print("")
+                    }
+                }
+            }
+            
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.mint)
     }
 }
