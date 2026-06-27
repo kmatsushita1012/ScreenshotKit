@@ -91,6 +91,52 @@ func urlParserMatchesSchemeCaseInsensitively() {
 }
 
 @Test
+func launchEnvironmentParserReadsEnvironmentVariables() {
+    let parser = ScreenshotLaunchEnvironmentParser()
+    let processInfo = ProcessInfoFixture(
+        arguments: [],
+        environment: [
+            ScreenshotLaunchEnvironmentParser.autoStartEnvironmentKey: "1",
+            ScreenshotLaunchEnvironmentParser.deviceNameEnvironmentKey: "iPhone 17 Pro/Max"
+        ]
+    )
+
+    let route = parser.parse(processInfo: processInfo)
+
+    #expect(route?.command == .start(deviceName: "iPhone 17 Pro-Max"))
+}
+
+@Test
+func launchEnvironmentParserSupportsLaunchArguments() {
+    let parser = ScreenshotLaunchEnvironmentParser()
+    let processInfo = ProcessInfoFixture(
+        arguments: [
+            ScreenshotLaunchEnvironmentParser.autoStartArgument,
+            ScreenshotLaunchEnvironmentParser.deviceNameArgument,
+            "iPad Pro 13-inch"
+        ],
+        environment: [:]
+    )
+
+    let route = parser.parse(processInfo: processInfo)
+
+    #expect(route?.command == .start(deviceName: "iPad Pro 13-inch"))
+}
+
+@Test
+func launchEnvironmentParserIgnoresMissingAutostartSignal() {
+    let parser = ScreenshotLaunchEnvironmentParser()
+    let processInfo = ProcessInfoFixture(
+        arguments: [ScreenshotLaunchEnvironmentParser.deviceNameArgument, "iPhone 16"],
+        environment: [ScreenshotLaunchEnvironmentParser.deviceNameEnvironmentKey: "iPhone 16"]
+    )
+
+    let route = parser.parse(processInfo: processInfo)
+
+    #expect(route == nil)
+}
+
+@Test
 func localeProviderNormalizesCommonLanguageIdentifiers() {
     let provider = ScreenshotLocaleProvider(bundle: .moduleForTests(["ja", "en", "Base"]))
 
@@ -136,6 +182,25 @@ private struct MockScreenshotLocaleProvider: ScreenshotLocaleProviderProtocol {
 
     func localeIdentifiers() -> [String] {
         values
+    }
+}
+
+private final class ProcessInfoFixture: ProcessInfo, @unchecked Sendable {
+    private let fixtureArguments: [String]
+    private let fixtureEnvironment: [String: String]
+
+    init(arguments: [String], environment: [String: String]) {
+        self.fixtureArguments = arguments
+        self.fixtureEnvironment = environment
+        super.init()
+    }
+
+    override var arguments: [String] {
+        fixtureArguments
+    }
+
+    override var environment: [String: String] {
+        fixtureEnvironment
     }
 }
 

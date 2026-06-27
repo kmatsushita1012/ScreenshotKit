@@ -43,20 +43,14 @@ sanitize_component() {
   printf '%s' "$value"
 }
 
-encode_query_value() {
-  python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=""))' "$1"
-}
-
 infer_project_settings() {
   python3 - "$PWD" "$URL_SCHEME_OVERRIDE" <<'PY'
 import json
 import os
-import plistlib
 import subprocess
 import sys
 
 root = sys.argv[1]
-scheme_override = sys.argv[2]
 
 def run(cmd):
     return subprocess.check_output(cmd, cwd=root, text=True)
@@ -102,29 +96,10 @@ bundle_id = target_settings.get("PRODUCT_BUNDLE_IDENTIFIER")
 if not bundle_id:
     raise SystemExit("PRODUCT_BUNDLE_IDENTIFIER not found")
 
-project_dir = target_settings.get("PROJECT_DIR", os.path.dirname(project))
-info_plist = target_settings.get("INFOPLIST_FILE")
-url_scheme = scheme_override
-
-if not url_scheme and info_plist:
-    info_plist_path = os.path.join(project_dir, info_plist)
-    if os.path.exists(info_plist_path):
-      with open(info_plist_path, "rb") as fh:
-        plist = plistlib.load(fh)
-      for url_type in plist.get("CFBundleURLTypes", []):
-        schemes = url_type.get("CFBundleURLSchemes", [])
-        if schemes:
-          url_scheme = schemes[0]
-          break
-
-if not url_scheme:
-    raise SystemExit("URL scheme was not provided and could not be inferred from Info.plist")
-
 print(json.dumps({
     "project": project,
     "scheme": scheme,
     "bundle_id": bundle_id,
-    "url_scheme": url_scheme,
 }))
 PY
 }
@@ -297,28 +272,24 @@ boot_device() {
 
 run_capture_for_device() {
   local bundle_id="$1"
-  local url_scheme="$2"
-  local udid="$3"
-  local raw_device_name="$4"
-  local output_root="$5"
+  local udid="$2"
+  local raw_device_name="$3"
+  local output_root="$4"
 
   local device_name
-  local device_name_query
   local app_container
   local sessions_dir
   local latest_session_pointer
-  local start_url
   local session_dir
 
   device_name="$(sanitize_component "$raw_device_name")"
-  device_name_query="$(encode_query_value "$raw_device_name")"
 
   app_container="$(xcrun simctl get_app_container "$udid" "$bundle_id" data)"
   sessions_dir="$app_container/Library/Application Support/ScreenshotKit/Sessions"
   latest_session_pointer="$sessions_dir/latest-session.txt"
-  start_url="${url_scheme}:/screenshots/start?deviceName=${device_name_query}"
-
-  xcrun simctl openurl "$udid" "$start_url"
+  SIMCTL_CHILD_SCREENSHOTKIT_AUTOSTART=1 \
+  SIMCTL_CHILD_SCREENSHOTKIT_DEVICE_NAME="$raw_device_name" \
+  xcrun simctl launch --terminate-running-process "$udid" "$bundle_id" >/dev/null
 
   for _ in $(seq 1 300); do
     if [ -f "$latest_session_pointer" ]; then
@@ -346,14 +317,13 @@ run_capture_for_device() {
 
 PROJECT_SETTINGS_JSON="$(infer_project_settings)"
 BUNDLE_ID="$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])["bundle_id"])' "$PROJECT_SETTINGS_JSON")"
-URL_SCHEME="$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])["url_scheme"])' "$PROJECT_SETTINGS_JSON")"
 mkdir -p "$OUTPUT_ROOT"
 
 if [ -n "$DEVICE_ID_OVERRIDE" ]; then
   DEVICE_INFO_JSON="$(get_device_info "$DEVICE_ID_OVERRIDE")"
   TARGET_DEVICE_NAME="$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])["name"])' "$DEVICE_INFO_JSON")"
   boot_device "$DEVICE_ID_OVERRIDE"
-  run_capture_for_device "$BUNDLE_ID" "$URL_SCHEME" "$DEVICE_ID_OVERRIDE" "$TARGET_DEVICE_NAME" "$OUTPUT_ROOT"
+  run_capture_for_device "$BUNDLE_ID" "$DEVICE_ID_OVERRIDE" "$TARGET_DEVICE_NAME" "$OUTPUT_ROOT"
   exit 0
 fi
 
@@ -374,10 +344,10 @@ IPAD_UDID="$(ensure_device "$RUNTIME_ID" "$IPAD_NAME" "$IPAD_TYPE_ID" "$IPAD_UDI
 boot_device "$IPHONE_UDID"
 boot_device "$IPAD_UDID"
 
-run_capture_for_device "$BUNDLE_ID" "$URL_SCHEME" "$IPHONE_UDID" "$IPHONE_NAME" "$OUTPUT_ROOT" &
+run_capture_for_device "$BUNDLE_ID" "$IPHONE_UDID" "$IPHONE_NAME" "$OUTPUT_ROOT" &
 iphone_pid=$!
 
-run_capture_for_device "$BUNDLE_ID" "$URL_SCHEME" "$IPAD_UDID" "$IPAD_NAME" "$OUTPUT_ROOT" &
+run_capture_for_device "$BUNDLE_ID" "$IPAD_UDID" "$IPAD_NAME" "$OUTPUT_ROOT" &
 ipad_pid=$!
 
 wait "$iphone_pid"

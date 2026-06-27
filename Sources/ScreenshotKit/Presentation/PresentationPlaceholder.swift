@@ -106,11 +106,13 @@ final class ScreenshotContainerViewModel: ObservableObject {
     private let urlScheme: String
     private let registry: ScreenshotRegistry
     private let urlParser: any ScreenshotURLParserProtocol
+    private let launchEnvironmentParser: any ScreenshotLaunchEnvironmentParserProtocol
     private let handleUseCase: any HandleScreenshotCommandUseCaseProtocol
     private let progressStore: any ScreenshotProgressStoreProtocol
 
     private var pendingJobs: [ScreenshotCaptureJob] = []
     private var isCaptureRunning = false
+    private var hasProcessedLaunchEnvironment = false
     private var activeCaptureKey: String?
     private var currentDeviceName = "unknown-device"
     private var currentCaptureSource: DisplayedSceneCaptureSource?
@@ -120,12 +122,14 @@ final class ScreenshotContainerViewModel: ObservableObject {
         urlScheme: String,
         registry: ScreenshotRegistry,
         urlParser: any ScreenshotURLParserProtocol,
+        launchEnvironmentParser: any ScreenshotLaunchEnvironmentParserProtocol,
         handleUseCase: any HandleScreenshotCommandUseCaseProtocol,
         progressStore: any ScreenshotProgressStoreProtocol
     ) {
         self.urlScheme = urlScheme
         self.registry = registry
         self.urlParser = urlParser
+        self.launchEnvironmentParser = launchEnvironmentParser
         self.handleUseCase = handleUseCase
         self.progressStore = progressStore
     }
@@ -140,6 +144,7 @@ final class ScreenshotContainerViewModel: ObservableObject {
             urlScheme: urlScheme,
             registry: registry,
             urlParser: ScreenshotURLParser(),
+            launchEnvironmentParser: ScreenshotLaunchEnvironmentParser(),
             handleUseCase: HandleScreenshotCommandUseCase(
                 progressStore: progressStore,
                 localeProvider: ScreenshotLocaleProvider()
@@ -151,6 +156,18 @@ final class ScreenshotContainerViewModel: ObservableObject {
     func handleOpenURL(_ url: URL) {
         print("ScreenshotKit received URL: \(url.absoluteString)")
         guard let route = urlParser.parse(url, expectedScheme: urlScheme) else { return }
+        process(command: route.command)
+    }
+
+    func handleLaunchEnvironmentIfNeeded(processInfo: ProcessInfo = .processInfo) {
+        guard !hasProcessedLaunchEnvironment else { return }
+        hasProcessedLaunchEnvironment = true
+
+        guard let route = launchEnvironmentParser.parse(processInfo: processInfo) else {
+            return
+        }
+
+        print("ScreenshotKit autostart detected from ProcessInfo")
         process(command: route.command)
     }
 
@@ -377,6 +394,9 @@ public struct ScreenshotContainerView<Content: View>: View {
         }
         .onOpenURL { url in
             viewModel.handleOpenURL(url)
+        }
+        .task {
+            viewModel.handleLaunchEnvironmentIfNeeded()
         }
     }
 }
