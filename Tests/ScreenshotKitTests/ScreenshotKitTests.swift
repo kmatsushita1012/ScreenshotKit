@@ -71,6 +71,26 @@ func urlParserAlsoAcceptsScreenshotsPathStyle() {
 }
 
 @Test
+func urlParserAlsoAcceptsScreenshotsHostStyle() {
+    let parser = ScreenshotURLParser()
+    let url = URL(string: "myapp://screenshots/start?deviceName=iPhone%2017%20Pro")!
+
+    let route = parser.parse(url, expectedScheme: "myapp")
+
+    #expect(route?.command == .start(deviceName: "iPhone 17 Pro"))
+}
+
+@Test
+func urlParserMatchesSchemeCaseInsensitively() {
+    let parser = ScreenshotURLParser()
+    let url = URL(string: "MyApp://screenshots/start?deviceName=iPad")!
+
+    let route = parser.parse(url, expectedScheme: "myapp")
+
+    #expect(route?.command == .start(deviceName: "iPad"))
+}
+
+@Test
 func localeProviderNormalizesCommonLanguageIdentifiers() {
     let provider = ScreenshotLocaleProvider(bundle: .moduleForTests(["ja", "en", "Base"]))
 

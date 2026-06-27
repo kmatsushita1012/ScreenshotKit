@@ -62,6 +62,7 @@ ScreenshotKit は 2 つの役割に分かれます。
 ### 1. URL scheme を用意する
 
 ScreenshotKit は `myapp:/screenshots/start?...` のような URL を受け取って起動します。
+Simulator や URL 正規化の都合で `myapp://screenshots/start?...` や `myapp://screenshot/start?...` として届いても受理します。
 
 アプリの `Info.plist` で URL scheme を 1 つ設定してください。
 

@@ -82,7 +82,7 @@ flowchart TD
 ## Decisions
 
 - locale 一覧は API 引数ではなく `Bundle` から自動取得する
-- URL 形式は `myapp://screenshot/start?...` と `myapp:/screenshots/start?...` の両方を受ける
+- URL 形式は `myapp://screenshot/start?...`、`myapp://screenshots/start?...`、`myapp:/screenshots/start?...` を受ける
 - Shell は `device-id` を指定された場合は 1 台のみ、未指定時は iPhone / iPad の 2 台を並列実行する
 - `ScreenshotItem.id` は内部 scene 識別用に維持する
 - 保存用 `id` は `ScreenshotView(id:)` に寄せる
