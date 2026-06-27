@@ -27,8 +27,9 @@ public struct ScreenshotView<Title: View, Subtitle: View, Content: View, Backgro
     }
 
     public var body: some View {
-        GeometryReader { _ in
-            VStack(alignment: .center, spacing: 12) {
+        GeometryReader { proxy in
+            VStack(alignment: .center, spacing:24) {
+
                 VStack(spacing: 8) {
                     titleView()
                         .multilineTextAlignment(.center)
@@ -36,19 +37,15 @@ public struct ScreenshotView<Title: View, Subtitle: View, Content: View, Backgro
                         .multilineTextAlignment(.center)
                 }
                 .padding(.horizontal)
-
-                ZStack {
+                ZStack{
                     contentBuilder()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-
+                        .frame(maxWidth: .infinity, maxHeight: .infinity,alignment: .center)
                     Capsule(style: .continuous)
                         .frame(width: 100, height: 30)
                         .padding(.top)
-                        .frame(maxHeight: .infinity, alignment: .top)
+                        .frame(maxHeight: .infinity,alignment: .top)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .padding(.horizontal, 36)
-                .padding(.bottom, 8)
+                .frame(width: proxy.size.width, height: proxy.size.height)
                 .background(platformSystemBackgroundColor)
                 .clipShape(roundedRectangle)
                 .overlay(
@@ -59,6 +56,8 @@ public struct ScreenshotView<Title: View, Subtitle: View, Content: View, Backgro
                     roundedRectangle
                         .stroke(.black, lineWidth: 4)
                 )
+                .scaleEffect(0.7)
+
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
