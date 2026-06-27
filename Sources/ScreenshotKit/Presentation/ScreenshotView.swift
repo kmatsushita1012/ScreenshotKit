@@ -47,8 +47,6 @@ public struct ScreenshotView<Title: View, Subtitle: View, Content: View, Backgro
                         .frame(maxHeight: .infinity, alignment: .top)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .padding(.horizontal, 36)
-                .padding(.bottom, 8)
                 .background(platformSystemBackgroundColor)
                 .clipShape(roundedRectangle)
                 .overlay(
@@ -59,6 +57,7 @@ public struct ScreenshotView<Title: View, Subtitle: View, Content: View, Backgro
                     roundedRectangle
                         .stroke(.black, lineWidth: 4)
                 )
+                .scaleEffect(0.7, anchor: .top)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
@@ -166,10 +165,17 @@ public extension ScreenshotView where Background == EmptyView, Content == AnyVie
 
 #Preview {
     ScreenshotView(title: "とても賢いアプリです", subtitle: "ダウンロード必須"){
-        VStack {
-            Text("Hello, World!")
+        NavigationStack {
+            VStack {
+                Text("Hello, World!")
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(.mint)
+            .toolbar{
+                EditButton()
+            }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.mint)
+        .ignoresSafeArea()
+        
     }
 }
