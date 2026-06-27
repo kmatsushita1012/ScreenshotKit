@@ -5,7 +5,7 @@ import SwiftUI
 struct ExampleApp: App {
     var body: some Scene {
         WindowGroup {
-            ExampleRootView()
+            ExampleAppView()
                 .screenshot(urlScheme: "exampleapp") {
                     WelcomeScreenshot()
                     FeatureScreenshot()
