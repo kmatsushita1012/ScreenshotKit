@@ -149,6 +149,7 @@ final class ScreenshotContainerViewModel: ObservableObject {
     }
 
     func handleOpenURL(_ url: URL) {
+        print("ScreenshotKit received URL: \(url.absoluteString)")
         guard let route = urlParser.parse(url, expectedScheme: urlScheme) else { return }
         process(command: route.command)
     }
