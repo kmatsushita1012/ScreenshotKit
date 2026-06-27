@@ -30,11 +30,13 @@ public struct ScreenshotView<Title: View, Subtitle: View, Content: View, Backgro
         GeometryReader { proxy in
             ZStack{
                 contentBuilder()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity,alignment: .center)
-                Capsule(style: .continuous)
-                    .frame(width: 100, height: 30)
-                    .padding(.top)
-                    .frame(maxHeight: .infinity,alignment: .top)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                    .safeAreaInset(edge: .top){
+                        Capsule(style: .continuous)
+                            .frame(width: 100, height: 30)
+                            .padding(.top)
+                            .frame(alignment: .top)
+                    }
             }
             .frame(width: proxy.size.width, height: proxy.size.height)
             .background(platformSystemBackgroundColor)
@@ -165,20 +167,13 @@ public extension ScreenshotView where Background == EmptyView, Content == AnyVie
 
 #Preview {
     ScreenshotView(title: "とても賢いアプリです", subtitle: "ダウンロード必須ダウンロード必須"){
-        NavigationStack {
-            VStack {
-                Text("Hello, World!")
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color.mint)
-            .toolbar{
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("close", systemImage: "xmark") {
-                        print("")
-                    }
-                }
-            }
-            
+        VStack {
+            Text("Hello, World!")
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(Color.mint)
+        .toolbar{
+            EditButton()
         }
     }
 }
