@@ -34,32 +34,50 @@ struct ExampleAppView: View {
                 }
             }
             .navigationTitle("ScreenshotKit")
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button("Dummy", systemImage: "xmark"){
+                        print("dummy")
+                    }
+                }
+            }
         }
     }
 }
 
 private extension ExampleAppView {
     var screenshotPreviewContent: some View {
-        VStack(spacing: 24) {
-            Image(systemName: "photo.on.rectangle.angled")
-                .font(.system(size: 52, weight: .semibold))
-                .foregroundStyle(.blue)
-
-            VStack(spacing: 8) {
-                Text("Open from normal launch")
-                    .font(.title2.weight(.semibold))
-                Text("Double tap anywhere to dismiss this full screen preview.")
-                    .font(.body)
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(.secondary)
+        ScrollView {
+            ForEach(0..<10) { _ in
+                VStack(spacing: 24) {
+                    Image(systemName: "photo.on.rectangle.angled")
+                        .font(.system(size: 52, weight: .semibold))
+                        .foregroundStyle(.blue)
+                    
+                    VStack(spacing: 8) {
+                        Text("Open from normal launch")
+                            .font(.title2.weight(.semibold))
+                        Text("Double tap anywhere to dismiss this full screen preview.")
+                            .font(.body)
+                            .multilineTextAlignment(.center)
+                            .foregroundStyle(.secondary)
+                    }
+                }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(32)
-        .background(Color(red: 0.95, green: 0.97, blue: 1.0))
-        .contentShape(Rectangle())
+        .background(.blue)
         .onTapGesture(count: 2) {
             isShowingScreenshotView = false
+        }
+        .navigationTitle("Hello")
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("Dummy", systemImage: "checkmark"){
+                    print("dummy")
+                }
+            }
         }
     }
 }
