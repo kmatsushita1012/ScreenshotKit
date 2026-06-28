@@ -29,7 +29,7 @@ public struct ScreenshotView<Title: View, Subtitle: View, Content: View, Backgro
     public var body: some View {
         GeometryReader { proxy in
             ZStack{
-                contentBuilder()
+                screenshotWrappedContent
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                     .safeAreaInset(edge: .top){
                         Capsule(style: .continuous)
@@ -69,6 +69,17 @@ public struct ScreenshotView<Title: View, Subtitle: View, Content: View, Backgro
             value: outputIdentifier
         )
     }
+
+    @ViewBuilder
+    private var screenshotWrappedContent: some View {
+#if canImport(UIKit)
+        ScreenshotContentViewControllerWrapper(
+            content: contentBuilder
+        )
+#else
+        contentBuilder()
+#endif
+    }
 }
 
 struct ScreenshotOutputIdentifierPreferenceKey: PreferenceKey {
@@ -83,6 +94,82 @@ private let roundedRectangle = RoundedRectangle(cornerRadius: 44, style: .contin
 #if canImport(UIKit)
 private let platformSystemBackgroundColor = Color(.systemBackground)
 private let platformBorderColor = Color(uiColor: UIColor.darkGray)
+
+private struct ScreenshotContentViewControllerWrapper<Content: View>: UIViewControllerRepresentable {
+    let content: () -> Content
+
+    func makeUIViewController(context: Context) -> ScreenshotContentContainerViewController<Content> {
+        ScreenshotContentContainerViewController(rootView: content())
+    }
+
+    func updateUIViewController(
+        _ uiViewController: ScreenshotContentContainerViewController<Content>,
+        context: Context
+    ) {
+        uiViewController.update(rootView: content())
+    }
+}
+
+private final class ScreenshotContentContainerViewController<Content: View>: UIViewController {
+    private let hostingController: UIHostingController<Content>
+
+    init(rootView: Content) {
+        hostingController = UIHostingController(rootView: rootView)
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        view.backgroundColor = .clear
+        hostingController.view.backgroundColor = .clear
+
+        addChild(hostingController)
+        view.addSubview(hostingController.view)
+        hostingController.didMove(toParent: self)
+
+        configureNavigationBarIfNeeded()
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        hostingController.view.frame = view.bounds
+    }
+
+    func update(rootView: Content) {
+        hostingController.rootView = rootView
+    }
+
+    private func configureNavigationBarIfNeeded() {
+        guard let navigationBar = hostingController.view.firstSubview(of: UINavigationBar.self) else {
+            return
+        }
+
+        navigationBar.isTranslucent = false
+        navigationBar.backgroundColor = .clear
+    }
+}
+
+private extension UIView {
+    func firstSubview<T: UIView>(of type: T.Type) -> T? {
+        if let view = self as? T {
+            return view
+        }
+
+        for subview in subviews {
+            if let match = subview.firstSubview(of: type) {
+                return match
+            }
+        }
+
+        return nil
+    }
+}
 #else
 private let platformSystemBackgroundColor = Color.white
 private let platformBorderColor = Color.gray
