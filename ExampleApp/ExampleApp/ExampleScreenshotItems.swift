@@ -35,7 +35,7 @@ struct WelcomeScreenshot: ScreenshotItem {
     }
 }
 
-＃Preview {
+#Preview {
     WelcomeScreenshot()
 }
 
