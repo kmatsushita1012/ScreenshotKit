@@ -149,6 +149,11 @@ private final class ScreenshotContentContainerViewController<Content: View>: UIV
         configureNavigationBarIfNeeded()
     }
 
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        configureNavigationBarIfNeeded()
+    }
+
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         logOwnLocationAfterAppearanceIfNeeded()
@@ -168,13 +173,7 @@ private final class ScreenshotContentContainerViewController<Content: View>: UIV
         dumpViewControllersIfNeeded()
         guard !didConfigureNavigationBar else { return }
         let verticalOffset: CGFloat = 44
-        guard let presentationHostingController = nearestPresentationHostingController() else {
-            return
-        }
-
-        guard let navigationBar = presentationHostingController.view.firstSubview(where: {
-            NSStringFromClass(type(of: $0)).contains("UIKitNavigationBar")
-        }) else {
+        guard let navigationBar = targetNavigationBar() else {
             return
         }
 
@@ -184,6 +183,24 @@ private final class ScreenshotContentContainerViewController<Content: View>: UIV
         )
         
         didConfigureNavigationBar = true
+    }
+
+    private func targetNavigationBar() -> UIView? {
+        if let localNavigationBar = hostingController.view.firstSubview(where: {
+            NSStringFromClass(type(of: $0)).contains("UIKitNavigationBar")
+        }) {
+            return localNavigationBar
+        }
+
+        if let localNavigationBar = view.firstSubview(where: {
+            NSStringFromClass(type(of: $0)).contains("UIKitNavigationBar")
+        }) {
+            return localNavigationBar
+        }
+
+        return nearestPresentationHostingController()?.view.firstSubview(where: {
+            NSStringFromClass(type(of: $0)).contains("UIKitNavigationBar")
+        })
     }
 
     private func dumpScenesIfNeeded() {
