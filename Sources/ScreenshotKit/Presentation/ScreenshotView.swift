@@ -590,8 +590,22 @@ private struct ScreenshotNavigationContainer<Content: View>: View {
 
     var body: some View {
         NavigationStack {
-            content
+            ScreenshotContentOffsetContainer {
+                content
+            }
         }
+    }
+}
+
+private struct ScreenshotContentOffsetContainer<Content: View>: View {
+    @ViewBuilder let content: () -> Content
+
+    var body: some View {
+        content()
+            .safeAreaInset(edge: .top) {
+                Color.clear
+                    .frame(height: 44)
+            }
     }
 }
 

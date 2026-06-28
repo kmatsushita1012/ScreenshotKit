@@ -49,7 +49,7 @@ struct ExampleAppScreenshotView:View {
     @Binding var isShowingScreenshotView: Bool
     
     var body: some View {
-        ScrollView {
+        List {
             ForEach(0..<10) { _ in
                 VStack(spacing: 24) {
                     Image(systemName: "photo.on.rectangle.angled")
