@@ -111,10 +111,13 @@ private struct ScreenshotContentViewControllerWrapper<Content: View>: UIViewCont
 }
 
 private final class ScreenshotContentContainerViewController<Content: View>: UIViewController {
-    private let hostingController: UIHostingController<Content>
+    private let hostingController: UIHostingController<ScreenshotNavigationContainer<Content>>
+    private var didConfigureNavigationBar = false
 
     init(rootView: Content) {
-        hostingController = UIHostingController(rootView: rootView)
+        hostingController = UIHostingController(
+            rootView: ScreenshotNavigationContainer(content: rootView)
+        )
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -139,19 +142,33 @@ private final class ScreenshotContentContainerViewController<Content: View>: UIV
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         hostingController.view.frame = view.bounds
+        configureNavigationBarIfNeeded()
     }
 
     func update(rootView: Content) {
-        hostingController.rootView = rootView
+        hostingController.rootView = ScreenshotNavigationContainer(content: rootView)
+        didConfigureNavigationBar = false
     }
 
     private func configureNavigationBarIfNeeded() {
+        guard !didConfigureNavigationBar else { return }
         guard let navigationBar = hostingController.view.firstSubview(of: UINavigationBar.self) else {
             return
         }
 
         navigationBar.isTranslucent = false
         navigationBar.backgroundColor = .clear
+        didConfigureNavigationBar = true
+    }
+}
+
+private struct ScreenshotNavigationContainer<Content: View>: View {
+    let content: Content
+
+    var body: some View {
+        NavigationStack {
+            content
+        }
     }
 }
 
