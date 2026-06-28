@@ -19,7 +19,7 @@ struct ExampleAppView: View {
                             title: "Welcome",
                             subtitle: "ScreenshotView sample"
                         ) {
-                            screenshotPreviewContent
+                            ExampleAppScreenshotView(isShowingScreenshotView: $isShowingScreenshotView)
                         }
                     }
                     Label("ProcessInfo から自動開始", systemImage: "play.circle.fill")
@@ -45,8 +45,10 @@ struct ExampleAppView: View {
     }
 }
 
-private extension ExampleAppView {
-    var screenshotPreviewContent: some View {
+struct ExampleAppScreenshotView:View {
+    @Binding var isShowingScreenshotView: Bool
+    
+    var body: some View {
         ScrollView {
             ForEach(0..<10) { _ in
                 VStack(spacing: 24) {
@@ -63,6 +65,7 @@ private extension ExampleAppView {
                             .foregroundStyle(.secondary)
                     }
                 }
+                .background(.red)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
@@ -72,6 +75,7 @@ private extension ExampleAppView {
             isShowingScreenshotView = false
         }
         .navigationTitle("Hello")
+        .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Dummy", systemImage: "checkmark"){
@@ -83,5 +87,10 @@ private extension ExampleAppView {
 }
 
 #Preview {
-    ExampleAppView()
+    ScreenshotView(
+        title: "Welcome",
+        subtitle: "ScreenshotView sample"
+    ) {
+        ExampleAppScreenshotView(isShowingScreenshotView: .constant(true))
+    }
 }
