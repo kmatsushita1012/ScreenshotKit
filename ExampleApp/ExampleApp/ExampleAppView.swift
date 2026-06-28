@@ -1,37 +1,26 @@
 import ScreenshotKit
 import SwiftUI
-import ScreenshotKit
 
 struct ExampleAppView: View {
+    @State private var isShowingScreenshotView = false
+
     var body: some View {
         NavigationStack {
             List {
                 Section("Capture") {
-                    NavigationLink {
+                    Button {
+                        isShowingScreenshotView = true
+                    } label: {
+                        Label("ScreenshotView を開く", systemImage: "iphone.gen3")
+                    }
+                    .buttonStyle(.plain)
+                    .fullScreenCover(isPresented: $isShowingScreenshotView) {
                         ScreenshotView(
                             title: "Welcome",
                             subtitle: "ScreenshotView sample"
                         ) {
-                            VStack(spacing: 24) {
-                                Image(systemName: "photo.on.rectangle.angled")
-                                    .font(.system(size: 52, weight: .semibold))
-                                    .foregroundStyle(.blue)
-
-                                VStack(spacing: 8) {
-                                    Text("Open from normal launch")
-                                        .font(.title2.weight(.semibold))
-                                    Text("Use this route to inspect ScreenshotView and the navigation bar interactively.")
-                                        .font(.body)
-                                        .multilineTextAlignment(.center)
-                                        .foregroundStyle(.secondary)
-                                }
-                            }
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .padding(32)
-                            .background(Color(red: 0.95, green: 0.97, blue: 1.0))
+                            screenshotPreviewContent
                         }
-                    } label: {
-                        Label("ScreenshotView を開く", systemImage: "iphone.gen3")
                     }
                     Label("ProcessInfo から自動開始", systemImage: "play.circle.fill")
                     Label("複数シーンを順番に保存", systemImage: "square.stack.3d.up.fill")
@@ -45,6 +34,32 @@ struct ExampleAppView: View {
                 }
             }
             .navigationTitle("ScreenshotKit")
+        }
+    }
+}
+
+private extension ExampleAppView {
+    var screenshotPreviewContent: some View {
+        VStack(spacing: 24) {
+            Image(systemName: "photo.on.rectangle.angled")
+                .font(.system(size: 52, weight: .semibold))
+                .foregroundStyle(.blue)
+
+            VStack(spacing: 8) {
+                Text("Open from normal launch")
+                    .font(.title2.weight(.semibold))
+                Text("Double tap anywhere to dismiss this full screen preview.")
+                    .font(.body)
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(32)
+        .background(Color(red: 0.95, green: 0.97, blue: 1.0))
+        .contentShape(Rectangle())
+        .onTapGesture(count: 2) {
+            isShowingScreenshotView = false
         }
     }
 }
