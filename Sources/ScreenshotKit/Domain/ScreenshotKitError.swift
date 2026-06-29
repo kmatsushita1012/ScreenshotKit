@@ -9,6 +9,8 @@ public enum ScreenshotKitError: Error, Sendable, Equatable {
     case fileReadFailed
     case missingRenderView(String)
     case captureFailed
+    case missingSessionDirectoryPath
+    case unknownSceneIdentifier(String)
     case unsupportedPlatform
     case unknown
 }

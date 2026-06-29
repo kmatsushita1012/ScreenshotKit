@@ -30,7 +30,7 @@ public struct ScreenshotURLParser: ScreenshotURLParserProtocol, Sendable {
                 .value?
                 .trimmingCharacters(in: .whitespacesAndNewlines)
 
-            return ScreenshotRoute(command: .start(deviceName: sanitizedDeviceName(deviceName)))
+            return ScreenshotRoute(command: .manifest(deviceName: sanitizedDeviceName(deviceName)))
         default:
             return nil
         }

@@ -1,5 +1,11 @@
 import Foundation
 
 public enum ScreenshotCommand: Sendable, Equatable, Hashable {
-    case start(deviceName: String)
+    case manifest(deviceName: String)
+    case capture(
+        deviceName: String,
+        sceneID: String,
+        localeIdentifier: String,
+        sessionDirectoryPath: String
+    )
 }

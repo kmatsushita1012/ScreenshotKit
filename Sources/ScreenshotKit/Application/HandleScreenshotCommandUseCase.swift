@@ -32,48 +32,71 @@ public struct HandleScreenshotCommandUseCase: HandleScreenshotCommandUseCaseProt
         items: [ScreenshotDescriptor]
     ) async throws -> ScreenshotProgress {
         switch command {
-        case let .start(deviceName):
+        case let .manifest(deviceName):
             let sessionDirectoryURL = try await progressStore.createSession(deviceName: deviceName)
             let localeIdentifiers = localeProvider.localeIdentifiers()
-            let jobs = localeIdentifiers.flatMap { localeIdentifier in
+            let entries = localeIdentifiers.flatMap { localeIdentifier in
                 items.map {
-                    ScreenshotCaptureJob(
+                    ScreenshotManifestEntry(
                         sceneID: $0.id,
                         localeIdentifier: localeIdentifier,
-                        fallbackOutputIdentifier: $0.fallbackOutputIdentifier
+                        outputIdentifier: $0.fallbackOutputIdentifier,
+                        relativePath: nil
                     )
                 }
             }
 
-            guard let first = jobs.first else {
-                try await progressStore.markFinished(
-                    sessionDirectoryURL: sessionDirectoryURL,
-                    manifest: ScreenshotManifest(
-                        deviceName: deviceName,
-                        sessionDirectoryPath: sessionDirectoryURL.path,
-                        entries: [],
-                        completedAt: Date()
-                    )
-                )
+            let manifest = ScreenshotManifest(
+                deviceName: deviceName,
+                sessionDirectoryPath: sessionDirectoryURL.path,
+                entries: entries,
+                completedAt: nil
+            )
+
+            guard !entries.isEmpty else {
                 return ScreenshotProgress(
+                    mode: .manifest,
                     current: nil,
                     pending: [],
                     finished: true,
                     sessionDirectoryPath: sessionDirectoryURL.path,
                     completedCount: 0,
                     totalCount: 0,
-                    deviceName: deviceName
+                    deviceName: deviceName,
+                    manifest: manifest
                 )
             }
 
             return ScreenshotProgress(
-                current: first,
-                pending: Array(jobs.dropFirst()),
-                finished: false,
+                mode: .manifest,
+                current: nil,
+                pending: [],
+                finished: true,
                 sessionDirectoryPath: sessionDirectoryURL.path,
+                completedCount: entries.count,
+                totalCount: entries.count,
+                deviceName: deviceName,
+                manifest: manifest
+            )
+        case let .capture(deviceName, sceneID, localeIdentifier, sessionDirectoryPath):
+            guard let item = items.first(where: { $0.id == sceneID }) else {
+                throw ScreenshotKitError.unknownSceneIdentifier(sceneID)
+            }
+
+            return ScreenshotProgress(
+                mode: .capture,
+                current: ScreenshotCaptureJob(
+                    sceneID: sceneID,
+                    localeIdentifier: localeIdentifier,
+                    fallbackOutputIdentifier: item.fallbackOutputIdentifier
+                ),
+                pending: [],
+                finished: false,
+                sessionDirectoryPath: sessionDirectoryPath,
                 completedCount: 0,
-                totalCount: jobs.count,
-                deviceName: deviceName
+                totalCount: 1,
+                deviceName: deviceName,
+                manifest: nil
             )
         }
     }

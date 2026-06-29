@@ -3,7 +3,6 @@
 //  ScreenshotKit
 //
 
-import Combine
 import Foundation
 import SwiftUI
 #if canImport(UIKit)
@@ -95,6 +94,8 @@ private struct ScreenshotModifier: ViewModifier {
 #if canImport(UIKit)
 @MainActor
 final class ScreenshotContainerViewModel: ObservableObject {
+    static let readinessLogPrefix = "SCREENSHOTKIT_READY"
+
     @Published private(set) var isScreenshotMode = false
     @Published private(set) var currentJob: ScreenshotCaptureJob?
     @Published private(set) var isFinished = false
@@ -110,13 +111,8 @@ final class ScreenshotContainerViewModel: ObservableObject {
     private let handleUseCase: any HandleScreenshotCommandUseCaseProtocol
     private let progressStore: any ScreenshotProgressStoreProtocol
 
-    private var pendingJobs: [ScreenshotCaptureJob] = []
-    private var isCaptureRunning = false
     private var hasProcessedLaunchEnvironment = false
-    private var activeCaptureKey: String?
-    private var currentDeviceName = "unknown-device"
-    private var currentCaptureSource: DisplayedSceneCaptureSource?
-    private var manifestEntries: [ScreenshotManifestEntry] = []
+    private var activeReadinessKey: String?
 
     init(
         urlScheme: String,
@@ -171,12 +167,11 @@ final class ScreenshotContainerViewModel: ObservableObject {
         process(command: route.command)
     }
 
-    func sceneDidBecomeCapturable(_ source: DisplayedSceneCaptureSource) {
-        guard source.taskID == currentJob?.id else { return }
-        currentCaptureSource = source
+    func sceneDidBecomeReady(_ readiness: ScreenshotSceneReadiness) {
+        guard readiness.taskID == currentJob?.id else { return }
 
         Task {
-            await performCaptureIfNeeded()
+            await publishReadinessIfNeeded(readiness)
         }
     }
 
@@ -188,14 +183,39 @@ final class ScreenshotContainerViewModel: ObservableObject {
                     items: registry.descriptors
                 )
 
+                try await prepareProgressArtifacts(progress)
+
                 await MainActor.run {
                     applyProgress(progress)
                 }
             } catch {
                 await MainActor.run {
-                    applyError(error)
+                    applyError(error, command: command)
                 }
             }
+        }
+    }
+
+    private func prepareProgressArtifacts(_ progress: ScreenshotProgress) async throws {
+        guard let sessionDirectoryPath = progress.sessionDirectoryPath else {
+            if progress.mode == .capture {
+                throw ScreenshotKitError.missingSessionDirectoryPath
+            }
+            return
+        }
+
+        let sessionDirectoryURL = URL(fileURLWithPath: sessionDirectoryPath, isDirectory: true)
+
+        switch progress.mode {
+        case .manifest:
+            if let manifest = progress.manifest {
+                try await progressStore.markFinished(
+                    sessionDirectoryURL: sessionDirectoryURL,
+                    manifest: manifest
+                )
+            }
+        case .capture:
+            try await progressStore.prepareForCapture(sessionDirectoryURL: sessionDirectoryURL)
         }
     }
 
@@ -203,142 +223,66 @@ final class ScreenshotContainerViewModel: ObservableObject {
         isScreenshotMode = true
         isFinished = progress.finished
         currentJob = progress.current
-        pendingJobs = progress.pending
         sessionDirectoryPath = progress.sessionDirectoryPath
         completedCount = progress.completedCount
         totalCount = progress.totalCount
-        currentDeviceName = progress.deviceName
-        currentCaptureSource = nil
-        manifestEntries = []
-        isCaptureRunning = false
-        activeCaptureKey = nil
+        activeReadinessKey = nil
     }
 
-    private func applyError(_ error: Error) {
+    private func applyError(_ error: Error, command: ScreenshotCommand) {
         lastErrorMessage = String(describing: error)
         isScreenshotMode = true
         isFinished = true
         currentJob = nil
-        pendingJobs = []
-        currentCaptureSource = nil
-    }
+        activeReadinessKey = nil
 
-    private func performCaptureIfNeeded() async {
-        guard let currentJob else { return }
-        guard !isFinished else { return }
-        guard let sessionDirectoryPath else { return }
-        guard let currentCaptureSource else { return }
-        guard currentCaptureSource.taskID == currentJob.id else { return }
-
-        let captureKey = currentJob.id
-        guard activeCaptureKey != captureKey || !isCaptureRunning else { return }
-
-        activeCaptureKey = captureKey
-        isCaptureRunning = true
-        print("ScreenshotKit capturing job: \(currentJob.id)")
-
-        do {
-            let outputIdentifier = sanitizedOutputIdentifier(
-                currentCaptureSource.outputIdentifier
-            ) ?? currentJob.fallbackOutputIdentifier
-
-            let pngData = try renderPNGData(from: currentCaptureSource.capture)
-            let sessionDirectoryURL = URL(fileURLWithPath: sessionDirectoryPath, isDirectory: true)
-
-            let entry = try await progressStore.saveImage(
-                pngData,
-                sessionDirectoryURL: sessionDirectoryURL,
-                deviceName: currentDeviceName,
-                localeIdentifier: sanitizedPathComponent(currentJob.localeIdentifier),
-                outputIdentifier: outputIdentifier,
-                sceneID: currentJob.sceneID
-            )
-
-            manifestEntries.append(entry)
-            completedCount += 1
-            advanceToNextJob(from: sessionDirectoryURL)
-        } catch {
-            applyCaptureError(error)
-        }
-    }
-
-    private func advanceToNextJob(from sessionDirectoryURL: URL) {
-        if pendingJobs.isEmpty {
-            print("ScreenshotKit finished all capture jobs")
-            currentJob = nil
-            isFinished = true
-            currentCaptureSource = nil
-            isCaptureRunning = false
-            activeCaptureKey = nil
-
-            let manifest = ScreenshotManifest(
-                deviceName: currentDeviceName,
-                sessionDirectoryPath: sessionDirectoryURL.path,
-                entries: manifestEntries,
-                completedAt: Date()
-            )
-
-            Task {
-                try? await progressStore.markFinished(
-                    sessionDirectoryURL: sessionDirectoryURL,
-                    manifest: manifest
-                )
-            }
-            return
-        }
-
-        currentJob = pendingJobs.removeFirst()
-        if let currentJob {
-            print("ScreenshotKit advancing to next job: \(currentJob.id)")
-        }
-        currentCaptureSource = nil
-        isCaptureRunning = false
-        activeCaptureKey = nil
-    }
-
-    private func applyCaptureError(_ error: Error) {
-        let message = String(describing: error)
-        lastErrorMessage = message
-        isFinished = true
-        currentJob = nil
-        pendingJobs = []
-        currentCaptureSource = nil
-        isCaptureRunning = false
-        activeCaptureKey = nil
-
-        guard let sessionDirectoryPath else { return }
+        guard let sessionDirectoryPath = sessionDirectoryPath(for: command) else { return }
         let sessionDirectoryURL = URL(fileURLWithPath: sessionDirectoryPath, isDirectory: true)
+        let message = String(describing: error)
 
         Task {
             try? await progressStore.markFailed(sessionDirectoryURL: sessionDirectoryURL, message: message)
         }
     }
 
-    private func renderPNGData(from capture: DisplayedSceneCaptureKind) throws -> Data {
-        guard let view = capture.viewBox.view else {
-            throw ScreenshotKitError.captureFailed
+    private func publishReadinessIfNeeded(_ readiness: ScreenshotSceneReadiness) async {
+        guard let currentJob else { return }
+        guard let sessionDirectoryPath else { return }
+        guard currentJob.id == readiness.taskID else { return }
+
+        let readinessKey = readiness.taskID
+        guard activeReadinessKey != readinessKey else { return }
+        activeReadinessKey = readinessKey
+
+        let outputIdentifier = sanitizedOutputIdentifier(
+            readiness.outputIdentifier
+        ) ?? currentJob.fallbackOutputIdentifier
+        let message = "\(Self.readinessLogPrefix) sceneID=\(currentJob.sceneID) locale=\(currentJob.localeIdentifier) outputIdentifier=\(outputIdentifier)"
+        let sessionDirectoryURL = URL(fileURLWithPath: sessionDirectoryPath, isDirectory: true)
+
+        do {
+            try await progressStore.markCaptureReady(
+                sessionDirectoryURL: sessionDirectoryURL,
+                message: message
+            )
+            print(message)
+        } catch {
+            applyError(error, command: .capture(
+                deviceName: "unknown-device",
+                sceneID: currentJob.sceneID,
+                localeIdentifier: currentJob.localeIdentifier,
+                sessionDirectoryPath: sessionDirectoryPath
+            ))
         }
+    }
 
-        let bounds = view.bounds.integral
-        guard !bounds.isEmpty else {
-            throw ScreenshotKitError.captureFailed
+    private func sessionDirectoryPath(for command: ScreenshotCommand) -> String? {
+        switch command {
+        case .manifest:
+            return nil
+        case let .capture(_, _, _, sessionDirectoryPath):
+            return sessionDirectoryPath
         }
-
-        let format = UIGraphicsImageRendererFormat.default()
-        format.scale = view.window?.screen.scale ?? UIScreen.main.scale
-        format.opaque = false
-
-        let image = UIGraphicsImageRenderer(bounds: bounds, format: format).image { _ in
-            if !view.drawHierarchy(in: bounds, afterScreenUpdates: true) {
-                view.layer.render(in: UIGraphicsGetCurrentContext()!)
-            }
-        }
-
-        guard let data = image.pngData() else {
-            throw ScreenshotKitError.captureFailed
-        }
-
-        return data
     }
 
     private func sanitizedOutputIdentifier(_ outputIdentifier: String?) -> String? {
@@ -391,8 +335,8 @@ public struct ScreenshotContainerView<Content: View>: View {
                     registry: registry,
                     currentJob: viewModel.currentJob,
                     isFinished: viewModel.isFinished,
-                    onCaptureSourceReady: { source in
-                        viewModel.sceneDidBecomeCapturable(source)
+                    onSceneReady: { readiness in
+                        viewModel.sceneDidBecomeReady(readiness)
                     }
                 )
             }
@@ -410,7 +354,7 @@ struct ScreenshotHostView: View {
     let registry: ScreenshotRegistry
     let currentJob: ScreenshotCaptureJob?
     let isFinished: Bool
-    let onCaptureSourceReady: (DisplayedSceneCaptureSource) -> Void
+    let onSceneReady: (ScreenshotSceneReadiness) -> Void
 
     var body: some View {
         if isFinished {
@@ -420,7 +364,7 @@ struct ScreenshotHostView: View {
                 taskID: currentJob.id,
                 localeIdentifier: currentJob.localeIdentifier,
                 content: view,
-                onCaptureSourceReady: onCaptureSourceReady
+                onSceneReady: onSceneReady
             )
             .id(currentJob.id)
         } else {
@@ -432,41 +376,19 @@ struct ScreenshotHostView: View {
 }
 
 @MainActor
-struct DisplayedSceneCaptureSource {
+struct ScreenshotSceneReadiness {
     let taskID: String
     let outputIdentifier: String?
-    let capture: DisplayedSceneCaptureKind
-}
-
-@MainActor
-final class WeakUIViewBox {
-    weak var view: UIView?
-
-    init(view: UIView?) {
-        self.view = view
-    }
-}
-
-@MainActor
-enum DisplayedSceneCaptureKind {
-    case liveView(WeakUIViewBox)
-
-    var viewBox: WeakUIViewBox {
-        switch self {
-        case let .liveView(viewBox):
-            return viewBox
-        }
-    }
 }
 
 private struct LiveRenderedScreenshotScene: UIViewControllerRepresentable {
     let taskID: String
     let localeIdentifier: String
     let content: AnyView
-    let onCaptureSourceReady: (DisplayedSceneCaptureSource) -> Void
+    let onSceneReady: (ScreenshotSceneReadiness) -> Void
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(onCaptureSourceReady: onCaptureSourceReady)
+        Coordinator(onSceneReady: onSceneReady)
     }
 
     func makeUIViewController(context: Context) -> CaptureHostingViewController {
@@ -491,6 +413,7 @@ private struct LiveRenderedScreenshotScene: UIViewControllerRepresentable {
             taskID: taskID,
             content: AnyView(
                 content.environment(\.locale, Locale(identifier: localeIdentifier))
+                    .statusBarHidden(true)
             ),
             onOutputIdentifierResolved: { outputIdentifier in
                 coordinator.outputIdentifierDidResolve(outputIdentifier)
@@ -500,15 +423,15 @@ private struct LiveRenderedScreenshotScene: UIViewControllerRepresentable {
 
     @MainActor
     final class Coordinator {
-        private let onCaptureSourceReady: (DisplayedSceneCaptureSource) -> Void
+        private let onSceneReady: (ScreenshotSceneReadiness) -> Void
         private var taskID = ""
         private var outputIdentifier: String?
         private var didResolveOutputIdentifier = false
         private var didPublish = false
-        private var viewBox = WeakUIViewBox(view: nil)
+        private var hasLaidOutView = false
 
-        init(onCaptureSourceReady: @escaping (DisplayedSceneCaptureSource) -> Void) {
-            self.onCaptureSourceReady = onCaptureSourceReady
+        init(onSceneReady: @escaping (ScreenshotSceneReadiness) -> Void) {
+            self.onSceneReady = onSceneReady
         }
 
         func prepareForUpdate(taskID: String) {
@@ -520,7 +443,7 @@ private struct LiveRenderedScreenshotScene: UIViewControllerRepresentable {
             outputIdentifier = nil
             didResolveOutputIdentifier = false
             didPublish = false
-            viewBox = WeakUIViewBox(view: nil)
+            hasLaidOutView = false
         }
 
         func outputIdentifierDidResolve(_ outputIdentifier: String?) {
@@ -530,21 +453,20 @@ private struct LiveRenderedScreenshotScene: UIViewControllerRepresentable {
         }
 
         func captureViewDidLayout(_ view: UIView) {
-            viewBox = WeakUIViewBox(view: view)
+            hasLaidOutView = true
             publishIfReady()
         }
 
         private func publishIfReady() {
             guard !didPublish else { return }
             guard didResolveOutputIdentifier else { return }
-            guard viewBox.view != nil else { return }
+            guard hasLaidOutView else { return }
 
             didPublish = true
-            onCaptureSourceReady(
-                DisplayedSceneCaptureSource(
+            onSceneReady(
+                ScreenshotSceneReadiness(
                     taskID: taskID,
-                    outputIdentifier: outputIdentifier,
-                    capture: .liveView(viewBox)
+                    outputIdentifier: outputIdentifier
                 )
             )
         }
