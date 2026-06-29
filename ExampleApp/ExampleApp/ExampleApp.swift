@@ -7,9 +7,8 @@ struct ExampleApp: App {
         WindowGroup {
             ExampleAppView()
                 .screenshot(urlScheme: "exampleapp") {
-                    WelcomeScreenshot()
-                    FeatureScreenshot()
-                    SummaryScreenshot()
+                    MemoListScreenshot()
+                    MemoEditScreenshot()
                 }
         }
     }

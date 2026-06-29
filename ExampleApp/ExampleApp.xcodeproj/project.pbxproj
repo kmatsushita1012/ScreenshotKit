@@ -310,20 +310,20 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		F0A10000000000000000000D /* Build configuration list for PBXProject "ExampleApp" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				F0A10000000000000000000F /* Debug */,
-				F0A100000000000000000010 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		F0A100000000000000000009 /* Build configuration list for PBXNativeTarget "ExampleApp" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				F0A100000000000000000011 /* Debug */,
 				F0A100000000000000000012 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F0A10000000000000000000D /* Build configuration list for PBXProject "ExampleApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F0A10000000000000000000F /* Debug */,
+				F0A100000000000000000010 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

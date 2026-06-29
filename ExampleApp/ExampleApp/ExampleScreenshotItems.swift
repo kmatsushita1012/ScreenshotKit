@@ -1,253 +1,61 @@
 import ScreenshotKit
 import SwiftUI
 
-struct WelcomeScreenshot: ScreenshotItem {
-    static let id = "welcome"
+struct MemoListScreenshot: ScreenshotItem {
+    static let id = "memo-list"
 
     var body: some View {
         ScreenshotView(
-            id: "welcome",
-            title: "Welcome",
-            subtitle: "ProcessInfo triggered capture"
+            id: Self.id,
+            title: "Stay on top of every note",
+            subtitle: "Pinned memos, recent updates, and quick context at a glance"
         ) {
-            ExampleScreen(
-                eyebrow: "AUTOSTART",
-                title: "Start from ProcessInfo",
-                subtitle: "The first scene verifies the launch path without needing openURL.",
-                accent: .blue,
-                body: {
-                    VStack(alignment: .leading, spacing: 16) {
-                        ScreenStatusRow(
-                            icon: "sparkles",
-                            title: "Launch detected",
-                            detail: "ExampleApp boots directly into screenshot mode."
-                        )
-                        ScreenStatusRow(
-                            icon: "arrow.triangle.2.circlepath",
-                            title: "Scene ready",
-                            detail: "Each item renders as a full screen, not a card."
-                        )
-                    }
-                }
-            )
+            MemoListView(memos: Memo.screenshotList)
         }
-        .background(Color(red: 0.95, green: 0.97, blue: 1.0))
-    }
-}
-
-#Preview {
-    WelcomeScreenshot()
-}
-
-struct FeatureScreenshot: ScreenshotItem {
-    static let id = "feature"
-
-    var body: some View {
-        ScreenshotView(
-            id: "feature",
-            title: "Multiple Items",
-            subtitle: "Advances through more than one scene"
-        ) {
-            ExampleScreen(
-                eyebrow: "SCREEN FLOW",
-                title: "Progress stays visible",
-                subtitle: "The export run should make the full capture area obvious.",
-                accent: .green,
-                body: {
-                    VStack(alignment: .leading, spacing: 14) {
-                        ForEach(featureRows) { row in
-                            ScreenChecklistRow(
-                                icon: row.icon,
-                                title: row.title,
-                                detail: row.detail
-                            )
-                        }
-                    }
-                }
-            )
-        }
-        .background(Color(red: 0.93, green: 0.98, blue: 0.95))
-    }
-}
-
-struct SummaryScreenshot: ScreenshotItem {
-    static let id = "summary"
-
-    var body: some View {
-        ScreenshotView(
-            id: "summary",
-            title: "Completion",
-            subtitle: "Writes capture-complete when all scenes finish"
-        ) {
-            ExampleScreen(
-                eyebrow: "FINISH",
-                title: "Capture complete",
-                subtitle: "The last scene proves the run reaches the marker update.",
-                accent: .orange,
-                body: {
-                    VStack(alignment: .leading, spacing: 16) {
-                        HStack(spacing: 14) {
-                            Image(systemName: "checkmark.seal.fill")
-                                .font(.system(size: 30, weight: .semibold))
-                                .foregroundStyle(.orange)
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("Done")
-                                    .font(.title3.bold())
-                                Text("No card frame hides the actual bounds.")
-                                    .font(.callout)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-
-                        ScreenChecklistRow(
-                            icon: "folder.fill",
-                            title: "Saved output",
-                            detail: "Artifacts are written into the ignored .build directory."
-                        )
-                    }
-                }
-            )
-        }
-        .background(Color(red: 1.0, green: 0.96, blue: 0.92))
-    }
-}
-
-private let featureRows: [FeatureRow] = [
-    FeatureRow(
-        icon: "play.circle.fill",
-        title: "ProcessInfo autostart",
-        detail: "The export script starts the app with launch environment values."
-    ),
-    FeatureRow(
-        icon: "square.stack.3d.up.fill",
-        title: "Scene handoff",
-        detail: "The container advances from one screen to the next."
-    ),
-    FeatureRow(
-        icon: "checkmark.circle.fill",
-        title: "Completion marker",
-        detail: "Final progress updates write capture-complete."
-    )
-]
-
-private struct FeatureRow: Identifiable {
-    let id = UUID()
-    let icon: String
-    let title: String
-    let detail: String
-}
-
-private struct ExampleScreen<BodyContent: View>: View {
-    let eyebrow: String
-    let title: String
-    let subtitle: String
-    let accent: Color
-    let content: () -> BodyContent
-
-    init(
-        eyebrow: String,
-        title: String,
-        subtitle: String,
-        accent: Color,
-        @ViewBuilder body: @escaping () -> BodyContent
-    ) {
-        self.eyebrow = eyebrow
-        self.title = title
-        self.subtitle = subtitle
-        self.accent = accent
-        self.content = body
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            HStack(alignment: .center) {
-                Text(eyebrow)
-                    .font(.caption.bold())
-                    .tracking(1.4)
-                    .foregroundStyle(accent)
-                Spacer()
-                Image(systemName: "circle.grid.3x3.fill")
-                    .foregroundStyle(accent.opacity(0.9))
-            }
-
-            VStack(alignment: .leading, spacing: 10) {
-                Text(title)
-                    .font(.system(size: 32, weight: .black, design: .rounded))
-                    .foregroundStyle(.primary)
-                    .fixedSize(horizontal: false, vertical: true)
-                Text(subtitle)
-                    .font(.headline)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            content()
-
-            Spacer(minLength: 0)
-        }
-        .padding(28)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .overlay {
+        .background(
             LinearGradient(
                 colors: [
-                    accent.opacity(0.22),
-                    Color.black.opacity(0.02),
-                    Color.white
+                    Color(red: 0.96, green: 0.98, blue: 1.0),
+                    Color(red: 0.89, green: 0.95, blue: 1.0),
+                    Color(red: 0.93, green: 0.98, blue: 0.96)
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
-            .ignoresSafeArea()
-        }
+        )
     }
 }
 
-private struct ScreenStatusRow: View {
-    let icon: String
-    let title: String
-    let detail: String
+struct MemoEditScreenshot: ScreenshotItem {
+    static let id = "memo-edit"
 
     var body: some View {
-        HStack(alignment: .top, spacing: 14) {
-            Image(systemName: icon)
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundStyle(.blue)
-                .frame(width: 28)
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.headline)
-                Text(detail)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-            }
+        ScreenshotView(
+            id: Self.id,
+            title: "Edit without losing focus",
+            subtitle: "Title, category, and content stay together in one calm workspace"
+        ) {
+            MemoEditView(memo: Memo.screenshotDraft)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RadialGradient(
+                colors: [
+                    Color(red: 1.0, green: 0.96, blue: 0.9),
+                    Color(red: 0.99, green: 0.91, blue: 0.82),
+                    Color(red: 0.95, green: 0.87, blue: 0.95)
+                ],
+                center: .topTrailing,
+                startRadius: 40,
+                endRadius: 520
+            )
+        )
     }
 }
 
-private struct ScreenChecklistRow: View {
-    let icon: String
-    let title: String
-    let detail: String
+#Preview {
+    MemoListScreenshot()
+}
 
-    var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(.green)
-                .padding(.top, 2)
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.headline)
-                Text(detail)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-            }
-
-            Spacer(minLength: 0)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
+#Preview {
+    MemoEditScreenshot()
 }

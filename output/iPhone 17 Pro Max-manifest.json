@@ -1,25 +1,19 @@
 {
-  "completedAt" : "2026-06-29T12:22:38Z",
+  "completedAt" : "2026-06-29T12:36:19Z",
   "deviceName" : "iPhone 17 Pro Max",
   "entries" : [
     {
       "localeIdentifier" : "en-US",
-      "outputIdentifier" : "welcome",
-      "relativePath" : "iPhone 17 Pro Max\/en-US\/welcome.png",
-      "sceneID" : "welcome"
+      "outputIdentifier" : "memo-list",
+      "relativePath" : "iPhone 17 Pro Max\/en-US\/memo-list.png",
+      "sceneID" : "memo-list"
     },
     {
       "localeIdentifier" : "en-US",
-      "outputIdentifier" : "feature",
-      "relativePath" : "iPhone 17 Pro Max\/en-US\/feature.png",
-      "sceneID" : "feature"
-    },
-    {
-      "localeIdentifier" : "en-US",
-      "outputIdentifier" : "summary",
-      "relativePath" : "iPhone 17 Pro Max\/en-US\/summary.png",
-      "sceneID" : "summary"
+      "outputIdentifier" : "memo-edit",
+      "relativePath" : "iPhone 17 Pro Max\/en-US\/memo-edit.png",
+      "sceneID" : "memo-edit"
     }
   ],
-  "sessionDirectoryPath" : "\/Users\/matsushitakazuya\/Library\/Developer\/CoreSimulator\/Devices\/C33D6D46-E1FE-4330-9D13-837755291681\/data\/Containers\/Data\/Application\/EF1902D0-FE70-439D-B75C-44449893F959\/Library\/Application Support\/ScreenshotKit\/Sessions\/session-20260629-122238-177"
+  "sessionDirectoryPath" : "\/Users\/matsushitakazuya\/Library\/Developer\/CoreSimulator\/Devices\/C33D6D46-E1FE-4330-9D13-837755291681\/data\/Containers\/Data\/Application\/3B1F1A3B-34EC-41D3-A7F0-2F159888E52E\/Library\/Application Support\/ScreenshotKit\/Sessions\/session-20260629-123618-805"
 }
