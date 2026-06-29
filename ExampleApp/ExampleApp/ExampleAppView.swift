@@ -49,7 +49,7 @@ struct ExampleAppScreenshotView:View {
     @Binding var isShowingScreenshotView: Bool
     
     var body: some View {
-        List {
+         ScrollView {
             ForEach(0..<10) { _ in
                 VStack(spacing: 24) {
                     Image(systemName: "photo.on.rectangle.angled")
@@ -65,12 +65,12 @@ struct ExampleAppScreenshotView:View {
                             .foregroundStyle(.secondary)
                     }
                 }
-                .background(.red)
+                .background(Color(.secondarySystemFill))
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(.blue)
+        .background(Color(.systemFill))
         .onTapGesture(count: 2) {
             isShowingScreenshotView = false
         }
@@ -79,6 +79,11 @@ struct ExampleAppScreenshotView:View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Dummy", systemImage: "checkmark"){
+                    print("dummy")
+                }
+            }
+            ToolbarItem(placement: .bottomBar) {
+                Button("Dummy"){
                     print("dummy")
                 }
             }

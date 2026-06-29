@@ -159,7 +159,35 @@ private struct ExampleScreen<BodyContent: View>: View {
     }
 
     var body: some View {
-        ZStack {
+        VStack(alignment: .leading, spacing: 20) {
+            HStack(alignment: .center) {
+                Text(eyebrow)
+                    .font(.caption.bold())
+                    .tracking(1.4)
+                    .foregroundStyle(accent)
+                Spacer()
+                Image(systemName: "circle.grid.3x3.fill")
+                    .foregroundStyle(accent.opacity(0.9))
+            }
+
+            VStack(alignment: .leading, spacing: 10) {
+                Text(title)
+                    .font(.system(size: 32, weight: .black, design: .rounded))
+                    .foregroundStyle(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(subtitle)
+                    .font(.headline)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            content()
+
+            Spacer(minLength: 0)
+        }
+        .padding(28)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .overlay {
             LinearGradient(
                 colors: [
                     accent.opacity(0.22),
@@ -169,36 +197,8 @@ private struct ExampleScreen<BodyContent: View>: View {
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
-
-            VStack(alignment: .leading, spacing: 20) {
-                HStack(alignment: .center) {
-                    Text(eyebrow)
-                        .font(.caption.bold())
-                        .tracking(1.4)
-                        .foregroundStyle(accent)
-                    Spacer()
-                    Image(systemName: "circle.grid.3x3.fill")
-                        .foregroundStyle(accent.opacity(0.9))
-                }
-
-                VStack(alignment: .leading, spacing: 10) {
-                    Text(title)
-                        .font(.system(size: 32, weight: .black, design: .rounded))
-                        .foregroundStyle(.primary)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Text(subtitle)
-                        .font(.headline)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                content()
-
-                Spacer(minLength: 0)
-            }
-            .padding(28)
+            .ignoresSafeArea()
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 }
 

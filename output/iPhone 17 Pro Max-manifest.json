@@ -1,0 +1,25 @@
+{
+  "completedAt" : "2026-06-29T12:22:38Z",
+  "deviceName" : "iPhone 17 Pro Max",
+  "entries" : [
+    {
+      "localeIdentifier" : "en-US",
+      "outputIdentifier" : "welcome",
+      "relativePath" : "iPhone 17 Pro Max\/en-US\/welcome.png",
+      "sceneID" : "welcome"
+    },
+    {
+      "localeIdentifier" : "en-US",
+      "outputIdentifier" : "feature",
+      "relativePath" : "iPhone 17 Pro Max\/en-US\/feature.png",
+      "sceneID" : "feature"
+    },
+    {
+      "localeIdentifier" : "en-US",
+      "outputIdentifier" : "summary",
+      "relativePath" : "iPhone 17 Pro Max\/en-US\/summary.png",
+      "sceneID" : "summary"
+    }
+  ],
+  "sessionDirectoryPath" : "\/Users\/matsushitakazuya\/Library\/Developer\/CoreSimulator\/Devices\/C33D6D46-E1FE-4330-9D13-837755291681\/data\/Containers\/Data\/Application\/EF1902D0-FE70-439D-B75C-44449893F959\/Library\/Application Support\/ScreenshotKit\/Sessions\/session-20260629-122238-177"
+}
