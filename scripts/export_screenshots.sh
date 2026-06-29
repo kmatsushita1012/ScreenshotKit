@@ -12,6 +12,7 @@ URL_SCHEME_OVERRIDE="${2:-}"
 DEVICE_ID_OVERRIDE="${3:-}"
 READINESS_TIMEOUT_SECONDS=15
 READINESS_FALLBACK_DELAY_SECONDS=1
+POST_READINESS_SETTLE_SECONDS=1
 
 require_command() {
   if ! command -v "$1" >/dev/null 2>&1; then
@@ -513,7 +514,8 @@ capture_scene() {
   resolved_output_identifier="${actual_output_identifier:-$output_identifier}"
   target_path="$locale_dir/$resolved_output_identifier.png"
 
-  xcrun simctl io "$udid" screenshot "$temp_png" >/dev/null
+  sleep "$POST_READINESS_SETTLE_SECONDS"
+  xcrun simctl io "$udid" screenshot --mask ignored "$temp_png" >/dev/null
   mv "$temp_png" "$target_path"
   terminate_app "$udid" "$bundle_id"
   printf '%s\n' "$resolved_output_identifier"
