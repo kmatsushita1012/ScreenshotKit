@@ -3,13 +3,13 @@
 ## 概要
 
 ScreenshotKit は iOS SwiftUI アプリ内で App Store 用スクリーンショットを一括生成する。
-Shell は Xcode プロジェクト情報を推定し、iPhone / iPad Simulator を boot したうえで `screenshots/start` を送る。実際のキャプチャと保存はアプリ内で完結させる。
+Shell は Xcode プロジェクト情報を推定し、iPhone / iPad Simulator を boot したうえで launch trigger を付けてアプリを起動する。実際のキャプチャと保存はアプリ内で完結させる。
 
 ## 基本方針
 
 - UI Test は使わない
 - `simctl screenshot` は使わない
-- `screenshot/start` を受けたら全 locale × 全 scene を自動巡回する
+- `ProcessInfo` または `screenshot/start` を受けたら全 locale × 全 scene を自動巡回する
 - キャプチャは現在表示中の UIKit view をそのまま PNG 化する
 - サイズは固定値を持たず、起動中デバイスの実描画サイズを使う
 - locale 一覧は `Bundle` の localizations を正とする
@@ -69,15 +69,17 @@ ScreenshotView(
 
 ## 起動フロー
 
-Shell から以下を送る。
+Shell から以下のように起動する。
 
 ```bash
-xcrun simctl openurl <udid> "myapp:/screenshots/start?deviceName=iPhone%2017%20Pro%20Max"
+SIMCTL_CHILD_SCREENSHOTKIT_AUTOSTART=1 \
+SIMCTL_CHILD_SCREENSHOTKIT_DEVICE_NAME="iPhone 17 Pro Max" \
+xcrun simctl launch --terminate-running-process <udid> <bundle-id>
 ```
 
 アプリ側の動作:
 
-1. `deviceName` を取り出す
+1. `deviceName` を `ProcessInfo` または URL から取り出す
 2. `Bundle` から locale 一覧を取得する
 3. `locale × scene` のジョブ列を作る
 4. 1件ずつ表示する
@@ -95,11 +97,11 @@ xcrun simctl openurl <udid> "myapp:/screenshots/start?deviceName=iPhone%2017%20P
 
 ## Shell の責務
 
-- `.xcodeproj` から bundle ID と URL scheme を推定する
+- `.xcodeproj` から bundle ID を推定する
 - 利用可能な最新 iOS runtime を選ぶ
 - `device-id` が指定されたらその Simulator だけを boot して実行する
 - `device-id` が省略されたら iPhone / iPad の上位機種を 1 台ずつ boot する
-- 各 Simulator に対して `screenshots/start` を送る
+- 各 Simulator に対して launch trigger 付きでアプリを起動する
 - `latest-session.txt` と `capture-complete` を見て完了を待つ
 - 完成済みセッションから `<deviceName>/` 以下をユーザー指定先、未指定時は `./output` にコピーする
 - `manifest.json` も回収する

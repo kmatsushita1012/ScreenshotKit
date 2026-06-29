@@ -106,11 +106,13 @@ final class ScreenshotContainerViewModel: ObservableObject {
     private let urlScheme: String
     private let registry: ScreenshotRegistry
     private let urlParser: any ScreenshotURLParserProtocol
+    private let launchEnvironmentParser: any ScreenshotLaunchEnvironmentParserProtocol
     private let handleUseCase: any HandleScreenshotCommandUseCaseProtocol
     private let progressStore: any ScreenshotProgressStoreProtocol
 
     private var pendingJobs: [ScreenshotCaptureJob] = []
     private var isCaptureRunning = false
+    private var hasProcessedLaunchEnvironment = false
     private var activeCaptureKey: String?
     private var currentDeviceName = "unknown-device"
     private var currentCaptureSource: DisplayedSceneCaptureSource?
@@ -120,12 +122,14 @@ final class ScreenshotContainerViewModel: ObservableObject {
         urlScheme: String,
         registry: ScreenshotRegistry,
         urlParser: any ScreenshotURLParserProtocol,
+        launchEnvironmentParser: any ScreenshotLaunchEnvironmentParserProtocol,
         handleUseCase: any HandleScreenshotCommandUseCaseProtocol,
         progressStore: any ScreenshotProgressStoreProtocol
     ) {
         self.urlScheme = urlScheme
         self.registry = registry
         self.urlParser = urlParser
+        self.launchEnvironmentParser = launchEnvironmentParser
         self.handleUseCase = handleUseCase
         self.progressStore = progressStore
     }
@@ -140,6 +144,7 @@ final class ScreenshotContainerViewModel: ObservableObject {
             urlScheme: urlScheme,
             registry: registry,
             urlParser: ScreenshotURLParser(),
+            launchEnvironmentParser: ScreenshotLaunchEnvironmentParser(),
             handleUseCase: HandleScreenshotCommandUseCase(
                 progressStore: progressStore,
                 localeProvider: ScreenshotLocaleProvider()
@@ -149,7 +154,20 @@ final class ScreenshotContainerViewModel: ObservableObject {
     }
 
     func handleOpenURL(_ url: URL) {
+        print("ScreenshotKit received URL: \(url.absoluteString)")
         guard let route = urlParser.parse(url, expectedScheme: urlScheme) else { return }
+        process(command: route.command)
+    }
+
+    func handleLaunchEnvironmentIfNeeded(processInfo: ProcessInfo = .processInfo) {
+        guard !hasProcessedLaunchEnvironment else { return }
+        hasProcessedLaunchEnvironment = true
+
+        guard let route = launchEnvironmentParser.parse(processInfo: processInfo) else {
+            return
+        }
+
+        print("ScreenshotKit autostart detected from ProcessInfo")
         process(command: route.command)
     }
 
@@ -217,6 +235,7 @@ final class ScreenshotContainerViewModel: ObservableObject {
 
         activeCaptureKey = captureKey
         isCaptureRunning = true
+        print("ScreenshotKit capturing job: \(currentJob.id)")
 
         do {
             let outputIdentifier = sanitizedOutputIdentifier(
@@ -245,6 +264,7 @@ final class ScreenshotContainerViewModel: ObservableObject {
 
     private func advanceToNextJob(from sessionDirectoryURL: URL) {
         if pendingJobs.isEmpty {
+            print("ScreenshotKit finished all capture jobs")
             currentJob = nil
             isFinished = true
             currentCaptureSource = nil
@@ -268,6 +288,9 @@ final class ScreenshotContainerViewModel: ObservableObject {
         }
 
         currentJob = pendingJobs.removeFirst()
+        if let currentJob {
+            print("ScreenshotKit advancing to next job: \(currentJob.id)")
+        }
         currentCaptureSource = nil
         isCaptureRunning = false
         activeCaptureKey = nil
@@ -377,6 +400,9 @@ public struct ScreenshotContainerView<Content: View>: View {
         .onOpenURL { url in
             viewModel.handleOpenURL(url)
         }
+        .task {
+            viewModel.handleLaunchEnvironmentIfNeeded()
+        }
     }
 }
 
@@ -396,6 +422,7 @@ struct ScreenshotHostView: View {
                 content: view,
                 onCaptureSourceReady: onCaptureSourceReady
             )
+            .id(currentJob.id)
         } else {
             Text("No current screenshot item")
                 .padding()
@@ -461,6 +488,7 @@ private struct LiveRenderedScreenshotScene: UIViewControllerRepresentable {
 
     private func makeRootView(for coordinator: Coordinator) -> CaptureMetadataReportingRoot {
         CaptureMetadataReportingRoot(
+            taskID: taskID,
             content: AnyView(
                 content.environment(\.locale, Locale(identifier: localeIdentifier))
             ),
@@ -533,6 +561,7 @@ private final class CaptureHostingViewController: UIHostingController<CaptureMet
 }
 
 private struct CaptureMetadataReportingRoot: View {
+    let taskID: String
     let content: AnyView
     let onOutputIdentifierResolved: (String?) -> Void
 
