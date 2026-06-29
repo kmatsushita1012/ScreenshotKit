@@ -4,13 +4,13 @@ public struct ScreenshotManifest: Sendable, Equatable, Codable, Hashable {
     public let deviceName: String
     public let sessionDirectoryPath: String
     public let entries: [ScreenshotManifestEntry]
-    public let completedAt: Date
+    public let completedAt: Date?
 
     public init(
         deviceName: String,
         sessionDirectoryPath: String,
         entries: [ScreenshotManifestEntry],
-        completedAt: Date
+        completedAt: Date?
     ) {
         self.deviceName = deviceName
         self.sessionDirectoryPath = sessionDirectoryPath
@@ -23,7 +23,7 @@ public struct ScreenshotManifestEntry: Sendable, Equatable, Codable, Hashable, I
     public let sceneID: String
     public let localeIdentifier: String
     public let outputIdentifier: String
-    public let relativePath: String
+    public let relativePath: String?
 
     public var id: String {
         "\(localeIdentifier)::\(outputIdentifier)"
@@ -33,7 +33,7 @@ public struct ScreenshotManifestEntry: Sendable, Equatable, Codable, Hashable, I
         sceneID: String,
         localeIdentifier: String,
         outputIdentifier: String,
-        relativePath: String
+        relativePath: String?
     ) {
         self.sceneID = sceneID
         self.localeIdentifier = localeIdentifier

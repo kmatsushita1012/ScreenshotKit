@@ -3,7 +3,7 @@ import Testing
 @testable import ScreenshotKit
 
 @Test
-func startCommandCreatesBatchJobsForAllLocalesAndScenes() async throws {
+func manifestCommandCreatesPlannedEntriesForAllLocalesAndScenes() async throws {
     let store = MockScreenshotProgressStore()
     let useCase = HandleScreenshotCommandUseCase(
         progressStore: store,
@@ -11,27 +11,30 @@ func startCommandCreatesBatchJobsForAllLocalesAndScenes() async throws {
     )
 
     let progress = try await useCase.execute(
-        command: .start(deviceName: "iPhone 16 Pro"),
+        command: .manifest(deviceName: "iPhone 16 Pro"),
         items: [
             ScreenshotDescriptor(id: "home", fallbackOutputIdentifier: "001"),
             ScreenshotDescriptor(id: "detail", fallbackOutputIdentifier: "002")
         ]
     )
 
-    #expect(progress.finished == false)
+    #expect(progress.mode == .manifest)
+    #expect(progress.finished)
     #expect(progress.totalCount == 4)
-    #expect(progress.completedCount == 0)
-    #expect(progress.current?.sceneID == "home")
-    #expect(progress.current?.localeIdentifier == "ja")
-    #expect(progress.pending.count == 3)
-    #expect(progress.pending[0].sceneID == "detail")
-    #expect(progress.pending[1].localeIdentifier == "en")
+    #expect(progress.completedCount == 4)
+    #expect(progress.current == nil)
+    #expect(progress.pending.isEmpty)
     #expect(progress.deviceName == "iPhone 16 Pro")
+    #expect(progress.manifest?.entries.count == 4)
+    #expect(progress.manifest?.entries[0].sceneID == "home")
+    #expect(progress.manifest?.entries[0].localeIdentifier == "ja")
+    #expect(progress.manifest?.entries[0].outputIdentifier == "001")
+    #expect(progress.manifest?.entries[0].relativePath == nil)
     #expect(await store.createdDeviceNames == ["iPhone 16 Pro"])
 }
 
 @Test
-func startCommandFinishesImmediatelyWhenThereAreNoJobs() async throws {
+func manifestCommandFinishesImmediatelyWhenThereAreNoJobs() async throws {
     let store = MockScreenshotProgressStore()
     let useCase = HandleScreenshotCommandUseCase(
         progressStore: store,
@@ -39,15 +42,71 @@ func startCommandFinishesImmediatelyWhenThereAreNoJobs() async throws {
     )
 
     let progress = try await useCase.execute(
-        command: .start(deviceName: "iPhone SE"),
+        command: .manifest(deviceName: "iPhone SE"),
         items: []
     )
 
     #expect(progress.finished)
+    #expect(progress.mode == .manifest)
     #expect(progress.current == nil)
     #expect(progress.pending.isEmpty)
     #expect(progress.totalCount == 0)
-    #expect(await store.finishedSessionURLs.count == 1)
+    #expect(progress.manifest?.entries.isEmpty == true)
+    #expect(await store.finishedSessionURLs.isEmpty)
+}
+
+@Test
+func captureCommandReturnsSingleRequestedScene() async throws {
+    let store = MockScreenshotProgressStore()
+    let useCase = HandleScreenshotCommandUseCase(
+        progressStore: store,
+        localeProvider: MockScreenshotLocaleProvider(values: ["ja"])
+    )
+
+    let progress = try await useCase.execute(
+        command: .capture(
+            deviceName: "iPhone 16 Pro",
+            sceneID: "detail",
+            localeIdentifier: "en-US",
+            sessionDirectoryPath: "/tmp/session"
+        ),
+        items: [
+            ScreenshotDescriptor(id: "home", fallbackOutputIdentifier: "001"),
+            ScreenshotDescriptor(id: "detail", fallbackOutputIdentifier: "002")
+        ]
+    )
+
+    #expect(progress.mode == .capture)
+    #expect(progress.finished == false)
+    #expect(progress.current?.sceneID == "detail")
+    #expect(progress.current?.localeIdentifier == "en-US")
+    #expect(progress.current?.fallbackOutputIdentifier == "002")
+    #expect(progress.sessionDirectoryPath == "/tmp/session")
+    #expect(progress.totalCount == 1)
+    #expect(progress.manifest == nil)
+}
+
+@Test
+func captureCommandRejectsUnknownScene() async throws {
+    let store = MockScreenshotProgressStore()
+    let useCase = HandleScreenshotCommandUseCase(
+        progressStore: store,
+        localeProvider: MockScreenshotLocaleProvider(values: ["ja"])
+    )
+
+    await #expect(throws: ScreenshotKitError.unknownSceneIdentifier("missing")) {
+        try await useCase.execute(
+            command: .capture(
+                deviceName: "iPhone 16 Pro",
+                sceneID: "missing",
+                localeIdentifier: "en-US",
+                sessionDirectoryPath: "/tmp/session"
+            ),
+            items: [
+                ScreenshotDescriptor(id: "home", fallbackOutputIdentifier: "001")
+            ]
+        )
+    }
 }
 
 @Test
@@ -57,7 +116,7 @@ func urlParserReadsAndSanitizesDeviceName() {
 
     let route = parser.parse(url, expectedScheme: "myapp")
 
-    #expect(route?.command == .start(deviceName: "iPhone 16 Pro-Max"))
+    #expect(route?.command == .manifest(deviceName: "iPhone 16 Pro-Max"))
 }
 
 @Test
@@ -67,7 +126,7 @@ func urlParserAlsoAcceptsScreenshotsPathStyle() {
 
     let route = parser.parse(url, expectedScheme: "myapp")
 
-    #expect(route?.command == .start(deviceName: "iPad Pro"))
+    #expect(route?.command == .manifest(deviceName: "iPad Pro"))
 }
 
 @Test
@@ -77,7 +136,7 @@ func urlParserAlsoAcceptsScreenshotsHostStyle() {
 
     let route = parser.parse(url, expectedScheme: "myapp")
 
-    #expect(route?.command == .start(deviceName: "iPhone 17 Pro"))
+    #expect(route?.command == .manifest(deviceName: "iPhone 17 Pro"))
 }
 
 @Test
@@ -87,31 +146,58 @@ func urlParserMatchesSchemeCaseInsensitively() {
 
     let route = parser.parse(url, expectedScheme: "myapp")
 
-    #expect(route?.command == .start(deviceName: "iPad"))
+    #expect(route?.command == .manifest(deviceName: "iPad"))
 }
 
 @Test
-func launchEnvironmentParserReadsEnvironmentVariables() {
+func launchEnvironmentParserReadsManifestEnvironmentVariables() {
     let parser = ScreenshotLaunchEnvironmentParser()
     let processInfo = ProcessInfoFixture(
         arguments: [],
         environment: [
-            ScreenshotLaunchEnvironmentParser.autoStartEnvironmentKey: "1",
+            ScreenshotLaunchEnvironmentParser.modeEnvironmentKey: ScreenshotLaunchEnvironmentParser.manifestModeValue,
             ScreenshotLaunchEnvironmentParser.deviceNameEnvironmentKey: "iPhone 17 Pro/Max"
         ]
     )
 
     let route = parser.parse(processInfo: processInfo)
 
-    #expect(route?.command == .start(deviceName: "iPhone 17 Pro-Max"))
+    #expect(route?.command == .manifest(deviceName: "iPhone 17 Pro-Max"))
 }
 
 @Test
-func launchEnvironmentParserSupportsLaunchArguments() {
+func launchEnvironmentParserReadsCaptureEnvironmentVariables() {
+    let parser = ScreenshotLaunchEnvironmentParser()
+    let processInfo = ProcessInfoFixture(
+        arguments: [],
+        environment: [
+            ScreenshotLaunchEnvironmentParser.modeEnvironmentKey: ScreenshotLaunchEnvironmentParser.captureModeValue,
+            ScreenshotLaunchEnvironmentParser.deviceNameEnvironmentKey: "iPhone 17 Pro/Max",
+            ScreenshotLaunchEnvironmentParser.sceneIDEnvironmentKey: "detail",
+            ScreenshotLaunchEnvironmentParser.localeEnvironmentKey: "en-US",
+            ScreenshotLaunchEnvironmentParser.sessionDirectoryPathEnvironmentKey: "/tmp/session"
+        ]
+    )
+
+    let route = parser.parse(processInfo: processInfo)
+
+    #expect(
+        route?.command == .capture(
+            deviceName: "iPhone 17 Pro-Max",
+            sceneID: "detail",
+            localeIdentifier: "en-US",
+            sessionDirectoryPath: "/tmp/session"
+        )
+    )
+}
+
+@Test
+func launchEnvironmentParserSupportsManifestLaunchArguments() {
     let parser = ScreenshotLaunchEnvironmentParser()
     let processInfo = ProcessInfoFixture(
         arguments: [
-            ScreenshotLaunchEnvironmentParser.autoStartArgument,
+            ScreenshotLaunchEnvironmentParser.modeArgument,
+            ScreenshotLaunchEnvironmentParser.manifestModeValue,
             ScreenshotLaunchEnvironmentParser.deviceNameArgument,
             "iPad Pro 13-inch"
         ],
@@ -120,15 +206,20 @@ func launchEnvironmentParserSupportsLaunchArguments() {
 
     let route = parser.parse(processInfo: processInfo)
 
-    #expect(route?.command == .start(deviceName: "iPad Pro 13-inch"))
+    #expect(route?.command == .manifest(deviceName: "iPad Pro 13-inch"))
 }
 
 @Test
-func launchEnvironmentParserIgnoresMissingAutostartSignal() {
+func launchEnvironmentParserRejectsCaptureWithoutRequiredValues() {
     let parser = ScreenshotLaunchEnvironmentParser()
     let processInfo = ProcessInfoFixture(
-        arguments: [ScreenshotLaunchEnvironmentParser.deviceNameArgument, "iPhone 16"],
-        environment: [ScreenshotLaunchEnvironmentParser.deviceNameEnvironmentKey: "iPhone 16"]
+        arguments: [
+            ScreenshotLaunchEnvironmentParser.modeArgument,
+            ScreenshotLaunchEnvironmentParser.captureModeValue,
+            ScreenshotLaunchEnvironmentParser.deviceNameArgument,
+            "iPhone 16"
+        ],
+        environment: [:]
     )
 
     let route = parser.parse(processInfo: processInfo)
@@ -143,30 +234,50 @@ func localeProviderNormalizesCommonLanguageIdentifiers() {
     #expect(provider.localeIdentifiers() == ["ja-JP", "en-US"])
 }
 
+@Test
+func previewLayoutMetricsDetectPreviewEnvironment() {
+    let processInfo = ProcessInfoFixture(
+        arguments: [],
+        environment: [ScreenshotPreviewLayoutMetrics.previewEnvironmentKey: "1"]
+    )
+
+    #expect(ScreenshotPreviewLayoutMetrics.isRunningForPreview(processInfo: processInfo))
+}
+
+@Test
+func previewLayoutMetricsCompensateTopInsetOnlyInPreview() {
+    #expect(
+        ScreenshotPreviewLayoutMetrics.verticalCompensation(
+            isRunningForPreview: true,
+            topSafeAreaInset: 54
+        ) == 54
+    )
+    #expect(
+        ScreenshotPreviewLayoutMetrics.verticalCompensation(
+            isRunningForPreview: false,
+            topSafeAreaInset: 54
+        ) == 0
+    )
+}
+
 private actor MockScreenshotProgressStore: ScreenshotProgressStoreProtocol {
     var createdDeviceNames: [String] = []
     var finishedSessionURLs: [URL] = []
     var storedManifests: [ScreenshotManifest] = []
+    var preparedCaptureSessionURLs: [URL] = []
+    var captureReadyMessages: [(URL, String)] = []
 
     func createSession(deviceName: String) async throws -> URL {
         createdDeviceNames.append(deviceName)
         return URL(fileURLWithPath: "/tmp/mock-session", isDirectory: true)
     }
 
-    func saveImage(
-        _ data: Data,
-        sessionDirectoryURL: URL,
-        deviceName: String,
-        localeIdentifier: String,
-        outputIdentifier: String,
-        sceneID: String
-    ) async throws -> ScreenshotManifestEntry {
-        ScreenshotManifestEntry(
-            sceneID: sceneID,
-            localeIdentifier: localeIdentifier,
-            outputIdentifier: outputIdentifier,
-            relativePath: "\(deviceName)/\(localeIdentifier)/\(outputIdentifier).png"
-        )
+    func prepareForCapture(sessionDirectoryURL: URL) async throws {
+        preparedCaptureSessionURLs.append(sessionDirectoryURL)
+    }
+
+    func markCaptureReady(sessionDirectoryURL: URL, message: String) async throws {
+        captureReadyMessages.append((sessionDirectoryURL, message))
     }
 
     func markFinished(sessionDirectoryURL: URL, manifest: ScreenshotManifest) async throws {

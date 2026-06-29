@@ -7,14 +7,8 @@ import Foundation
 
 public protocol ScreenshotProgressStoreProtocol: Sendable {
     func createSession(deviceName: String) async throws -> URL
-    func saveImage(
-        _ data: Data,
-        sessionDirectoryURL: URL,
-        deviceName: String,
-        localeIdentifier: String,
-        outputIdentifier: String,
-        sceneID: String
-    ) async throws -> ScreenshotManifestEntry
+    func prepareForCapture(sessionDirectoryURL: URL) async throws
+    func markCaptureReady(sessionDirectoryURL: URL, message: String) async throws
     func markFinished(
         sessionDirectoryURL: URL,
         manifest: ScreenshotManifest
@@ -59,38 +53,17 @@ public actor ScreenshotProgressStore: ScreenshotProgressStoreProtocol {
         return sessionDirectoryURL
     }
 
-    public func saveImage(
-        _ data: Data,
-        sessionDirectoryURL: URL,
-        deviceName: String,
-        localeIdentifier: String,
-        outputIdentifier: String,
-        sceneID: String
-    ) async throws -> ScreenshotManifestEntry {
-        let localeDirectoryURL = sessionDirectoryURL
-            .appendingPathComponent(deviceName, isDirectory: true)
-            .appendingPathComponent(localeIdentifier, isDirectory: true)
+    public func prepareForCapture(sessionDirectoryURL: URL) async throws {
+        let completeMarkerURL = sessionDirectoryURL.appendingPathComponent("capture-complete")
+        try await fileClient.removeItemIfExists(at: completeMarkerURL)
 
-        try await fileClient.createDirectory(at: localeDirectoryURL)
+        let errorMarkerURL = sessionDirectoryURL.appendingPathComponent("capture-error.txt")
+        try await fileClient.removeItemIfExists(at: errorMarkerURL)
+    }
 
-        let imageURL = localeDirectoryURL
-            .appendingPathComponent(outputIdentifier)
-            .appendingPathExtension("png")
-
-        try await fileClient.write(data, to: imageURL)
-
-        let relativePath = [
-            deviceName,
-            localeIdentifier,
-            "\(outputIdentifier).png"
-        ].joined(separator: "/")
-
-        return ScreenshotManifestEntry(
-            sceneID: sceneID,
-            localeIdentifier: localeIdentifier,
-            outputIdentifier: outputIdentifier,
-            relativePath: relativePath
-        )
+    public func markCaptureReady(sessionDirectoryURL: URL, message: String) async throws {
+        let markerURL = sessionDirectoryURL.appendingPathComponent("capture-complete")
+        try await fileClient.write(message, to: markerURL)
     }
 
     public func markFinished(
@@ -106,7 +79,7 @@ public actor ScreenshotProgressStore: ScreenshotProgressStoreProtocol {
         try await fileClient.write(manifestData, to: manifestURL)
 
         let markerURL = sessionDirectoryURL.appendingPathComponent("capture-complete")
-        try await fileClient.write("finished", to: markerURL)
+        try await fileClient.write("manifest-ready", to: markerURL)
     }
 
     public func markFailed(sessionDirectoryURL: URL, message: String) async throws {

@@ -27,6 +27,7 @@ struct ExampleAppView: View {
                 )
             }
         }
+        .statusBarHidden(true)
     }
 
     private func addMemo() {

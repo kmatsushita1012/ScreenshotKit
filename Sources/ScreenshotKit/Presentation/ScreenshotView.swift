@@ -28,6 +28,11 @@ public struct ScreenshotView<Title: View, Subtitle: View, Content: View, Backgro
 
     public var body: some View {
         GeometryReader { proxy in
+            let previewVerticalCompensation = ScreenshotPreviewLayoutMetrics.verticalCompensation(
+                isRunningForPreview: ScreenshotPreviewLayoutMetrics.isRunningForPreview(),
+                topSafeAreaInset: proxy.safeAreaInsets.top
+            )
+
             ZStack{
                 screenshotWrappedContent
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
@@ -62,6 +67,7 @@ public struct ScreenshotView<Title: View, Subtitle: View, Content: View, Backgro
                 .padding(.horizontal)
                 .offset(x: 0, y: proxy.size.height * 0.05)
             }
+            .offset(x: 0, y: previewVerticalCompensation)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .preference(
@@ -88,6 +94,22 @@ struct ScreenshotOutputIdentifierPreferenceKey: PreferenceKey {
 
     static func reduce(value: inout String?, nextValue: () -> String?) {
         value = nextValue() ?? value
+    }
+}
+
+enum ScreenshotPreviewLayoutMetrics {
+    static let previewEnvironmentKey = "XCODE_RUNNING_FOR_PREVIEW"
+
+    static func isRunningForPreview(processInfo: ProcessInfo = .processInfo) -> Bool {
+        processInfo.environment[previewEnvironmentKey] == "1"
+    }
+
+    static func verticalCompensation(
+        isRunningForPreview: Bool,
+        topSafeAreaInset: CGFloat
+    ) -> CGFloat {
+        guard isRunningForPreview else { return 0 }
+        return +topSafeAreaInset
     }
 }
 
