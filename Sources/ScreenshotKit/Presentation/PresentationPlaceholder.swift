@@ -339,8 +339,6 @@ public struct ScreenshotContainerView<Content: View>: View {
                         viewModel.sceneDidBecomeReady(readiness)
                     }
                 )
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .ignoresSafeArea()
             }
         }
         .onOpenURL { url in
@@ -419,7 +417,6 @@ private struct LiveRenderedScreenshotScene: UIViewControllerRepresentable {
                 content.environment(\.locale, Locale(identifier: localeIdentifier))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .statusBarHidden(true)
-                    .ignoresSafeArea()
             ),
             onOutputIdentifierResolved: { outputIdentifier in
                 coordinator.outputIdentifierDidResolve(outputIdentifier)
@@ -486,11 +483,6 @@ private final class CaptureHostingViewController: UIHostingController<CaptureMet
         super.viewDidLoad()
         view.backgroundColor = .clear
         view.isOpaque = false
-        view.insetsLayoutMarginsFromSafeArea = false
-
-        if #available(iOS 16.4, *) {
-            safeAreaRegions = []
-        }
     }
 
     override func viewDidLayoutSubviews() {
