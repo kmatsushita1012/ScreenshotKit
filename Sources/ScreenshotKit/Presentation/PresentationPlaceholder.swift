@@ -339,6 +339,8 @@ public struct ScreenshotContainerView<Content: View>: View {
                         viewModel.sceneDidBecomeReady(readiness)
                     }
                 )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .ignoresSafeArea()
             }
         }
         .onOpenURL { url in
@@ -367,6 +369,8 @@ struct ScreenshotHostView: View {
                 onSceneReady: onSceneReady
             )
             .id(currentJob.id)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .ignoresSafeArea()
         } else {
             Text("No current screenshot item")
                 .padding()
@@ -413,7 +417,9 @@ private struct LiveRenderedScreenshotScene: UIViewControllerRepresentable {
             taskID: taskID,
             content: AnyView(
                 content.environment(\.locale, Locale(identifier: localeIdentifier))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .statusBarHidden(true)
+                    .ignoresSafeArea()
             ),
             onOutputIdentifierResolved: { outputIdentifier in
                 coordinator.outputIdentifierDidResolve(outputIdentifier)
@@ -476,6 +482,17 @@ private struct LiveRenderedScreenshotScene: UIViewControllerRepresentable {
 private final class CaptureHostingViewController: UIHostingController<CaptureMetadataReportingRoot> {
     var onLayout: ((UIView) -> Void)?
 
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        view.backgroundColor = .clear
+        view.isOpaque = false
+        view.insetsLayoutMarginsFromSafeArea = false
+
+        if #available(iOS 16.4, *) {
+            safeAreaRegions = []
+        }
+    }
+
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         onLayout?(view)
@@ -491,6 +508,7 @@ private struct CaptureMetadataReportingRoot: View {
 
     var body: some View {
         content
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .onPreferenceChange(ScreenshotOutputIdentifierPreferenceKey.self) { value in
                 guard !hasResolvedOutputIdentifier else { return }
                 hasResolvedOutputIdentifier = true
