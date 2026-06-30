@@ -27,6 +27,7 @@ public struct ScreenshotView<Title: View, Subtitle: View, Content: View, Backgro
         GeometryReader { proxy in
             let previewVerticalCompensation = ScreenshotPreviewLayoutMetrics.verticalCompensation(
                 isRunningForPreview: ScreenshotPreviewLayoutMetrics.isRunningForPreview(),
+                deviceKind: ScreenshotDeviceKind.current,
                 topSafeAreaInset: proxy.safeAreaInsets.top
             )
 
@@ -74,9 +75,10 @@ enum ScreenshotPreviewLayoutMetrics {
 
     static func verticalCompensation(
         isRunningForPreview: Bool,
+        deviceKind: ScreenshotDeviceKind,
         topSafeAreaInset: CGFloat
     ) -> CGFloat {
-        guard isRunningForPreview else { return 0 }
+        guard isRunningForPreview, deviceKind == .phone else { return 0 }
         return +topSafeAreaInset
     }
 }

@@ -249,12 +249,21 @@ func previewLayoutMetricsCompensateTopInsetOnlyInPreview() {
     #expect(
         ScreenshotPreviewLayoutMetrics.verticalCompensation(
             isRunningForPreview: true,
+            deviceKind: .phone,
             topSafeAreaInset: 54
         ) == 54
     )
     #expect(
         ScreenshotPreviewLayoutMetrics.verticalCompensation(
             isRunningForPreview: false,
+            deviceKind: .phone,
+            topSafeAreaInset: 54
+        ) == 0
+    )
+    #expect(
+        ScreenshotPreviewLayoutMetrics.verticalCompensation(
+            isRunningForPreview: true,
+            deviceKind: .pad,
             topSafeAreaInset: 54
         ) == 0
     )

@@ -59,7 +59,7 @@ public struct ScreenshotDeviceScreenView<Content: View>: View {
     }
 }
 
-private enum ScreenshotDeviceKind {
+enum ScreenshotDeviceKind {
     case phone
     case pad
 
