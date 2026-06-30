@@ -8,6 +8,57 @@ import SwiftUI
 import UIKit
 #endif
 
+public struct ScreenshotDeviceScreenView<Content: View>: View {
+    private let contentBuilder: () -> Content
+
+    public init(
+        @ViewBuilder content: @escaping () -> Content
+    ) {
+        self.contentBuilder = content
+    }
+
+    public var body: some View {
+        let deviceKind = ScreenshotDeviceKind.current
+
+        ZStack {
+            screenshotWrappedContent
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+
+            if deviceKind.showsDynamicIsland {
+                VStack {
+                    Capsule(style: .continuous)
+                        .frame(width: 100, height: 30)
+                        .padding(.top)
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            }
+        }
+        .background(platformSystemBackgroundColor)
+        .clipShape(roundedRectangle)
+        .overlay(
+            roundedRectangle
+                .stroke(platformBorderColor, lineWidth: deviceKind.outerBorderLineWidth)
+        )
+        .overlay(
+            roundedRectangle
+                .stroke(.black, lineWidth: deviceKind.innerBorderLineWidth)
+        )
+    }
+
+    @ViewBuilder
+    private var screenshotWrappedContent: some View {
+#if canImport(UIKit)
+        ScreenshotContentViewControllerWrapper(
+            content: contentBuilder
+        )
+        .ignoresSafeArea(.all)
+#else
+        contentBuilder()
+#endif
+    }
+}
+
 public struct ScreenshotView<Title: View, Subtitle: View, Content: View, Background: View>: View {
     private let outputIdentifier: String?
     private let titleView: () -> Title
@@ -33,30 +84,13 @@ public struct ScreenshotView<Title: View, Subtitle: View, Content: View, Backgro
                 topSafeAreaInset: proxy.safeAreaInsets.top
             )
 
-            ZStack{
-                screenshotWrappedContent
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                    .safeAreaInset(edge: .top){
-                        Capsule(style: .continuous)
-                            .frame(width: 100, height: 30)
-                            .padding(.top)
-                            .frame(alignment: .top)
-                    }
-            }
+            ScreenshotDeviceScreenView(
+                content: contentBuilder
+            )
             .frame(width: proxy.size.width, height: proxy.size.height)
-            .background(platformSystemBackgroundColor)
-            .clipShape(roundedRectangle)
-            .overlay(
-                roundedRectangle
-                    .stroke(platformBorderColor, lineWidth: 8)
-            )
-            .overlay(
-                roundedRectangle
-                    .stroke(.black, lineWidth: 4)
-            )
             .scaleEffect(0.7)
             .offset(x: 0, y: proxy.size.height * 0.1)
-            
+
             .overlay(alignment: .top) {
                 VStack(spacing: 8) {
                     titleView()
@@ -74,18 +108,6 @@ public struct ScreenshotView<Title: View, Subtitle: View, Content: View, Backgro
             key: ScreenshotOutputIdentifierPreferenceKey.self,
             value: outputIdentifier
         )
-    }
-
-    @ViewBuilder
-    private var screenshotWrappedContent: some View {
-#if canImport(UIKit)
-        ScreenshotContentViewControllerWrapper(
-            content: contentBuilder
-        )
-        .ignoresSafeArea(.all)
-#else
-        contentBuilder()
-#endif
     }
 }
 
@@ -110,6 +132,54 @@ enum ScreenshotPreviewLayoutMetrics {
     ) -> CGFloat {
         guard isRunningForPreview else { return 0 }
         return +topSafeAreaInset
+    }
+}
+
+private enum ScreenshotDeviceKind {
+    case phone
+    case pad
+
+    static var current: Self {
+#if canImport(UIKit)
+        Self(idiom: UIDevice.current.userInterfaceIdiom)
+#else
+        .pad
+#endif
+    }
+
+#if canImport(UIKit)
+    init(idiom: UIUserInterfaceIdiom) {
+        switch idiom {
+        case .phone:
+            self = .phone
+        case .pad:
+            self = .pad
+        default:
+            self = .pad
+        }
+    }
+#endif
+
+    var showsDynamicIsland: Bool {
+        self == .phone
+    }
+
+    var outerBorderLineWidth: CGFloat {
+        switch self {
+        case .phone:
+            6
+        case .pad:
+            10
+        }
+    }
+
+    var innerBorderLineWidth: CGFloat {
+        switch self {
+        case .phone:
+            3
+        case .pad:
+            5
+        }
     }
 }
 
