@@ -128,6 +128,7 @@ private struct ScreenshotContentViewControllerWrapper<Content: View>: UIViewCont
 }
 
 private final class ScreenshotContentContainerViewController<Content: View>: UIViewController {
+    private let deviceKind: ScreenshotDeviceKind
     private let hostingController: UIHostingController<ScreenshotNavigationContainer<Content>>
     private var didConfigureNavigationBar = false
     private var didDumpScenes = false
@@ -140,8 +141,13 @@ private final class ScreenshotContentContainerViewController<Content: View>: UIV
     private var isSchedulingDeferredTitleOffset = false
 
     init(rootView: Content) {
+        let deviceKind = ScreenshotDeviceKind.current
+        self.deviceKind = deviceKind
         hostingController = UIHostingController(
-            rootView: ScreenshotNavigationContainer(content: rootView)
+            rootView: ScreenshotNavigationContainer(
+                deviceKind: deviceKind,
+                content: rootView
+            )
         )
         super.init(nibName: nil, bundle: nil)
     }
@@ -181,7 +187,10 @@ private final class ScreenshotContentContainerViewController<Content: View>: UIV
     }
 
     func update(rootView: Content) {
-        hostingController.rootView = ScreenshotNavigationContainer(content: rootView)
+        hostingController.rootView = ScreenshotNavigationContainer(
+            deviceKind: deviceKind,
+            content: rootView
+        )
         didConfigureNavigationBar = false
     }
 
@@ -189,7 +198,6 @@ private final class ScreenshotContentContainerViewController<Content: View>: UIV
         dumpScenesIfNeeded()
         dumpNavigationControllersIfNeeded()
         dumpViewControllersIfNeeded()
-        let verticalOffset: CGFloat = 44
         guard let navigationBar = targetNavigationBar() else {
             return
         }
@@ -199,7 +207,7 @@ private final class ScreenshotContentContainerViewController<Content: View>: UIV
         if !didConfigureNavigationBar {
             navigationBar.transform = CGAffineTransform(
                 translationX: 0,
-                y: verticalOffset
+                y: deviceKind == .phone ? 44 : 0
             )
             didConfigureNavigationBar = true
         }
@@ -768,11 +776,12 @@ private final class ScreenshotContentContainerViewController<Content: View>: UIV
 }
 
 private struct ScreenshotNavigationContainer<Content: View>: View {
+    let deviceKind: ScreenshotDeviceKind
     let content: Content
 
     var body: some View {
         NavigationStack {
-            ScreenshotContentOffsetContainer {
+            ScreenshotContentOffsetContainer(deviceKind: deviceKind) {
                 content
             }
         }
@@ -780,13 +789,16 @@ private struct ScreenshotNavigationContainer<Content: View>: View {
 }
 
 private struct ScreenshotContentOffsetContainer<Content: View>: View {
+    let deviceKind: ScreenshotDeviceKind
     @ViewBuilder let content: () -> Content
 
     var body: some View {
         content()
             .safeAreaInset(edge: .top) {
-                Color.clear
-                    .frame(height: 44)
+                if deviceKind == .phone {
+                    Color.clear
+                        .frame(height: 44)
+                }
             }
     }
 }
