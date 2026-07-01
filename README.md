@@ -71,7 +71,7 @@ struct MyApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
-                .screenshot(urlScheme: "myapp") {
+                .screenshot {
                     HomeScreenshot()
                     SettingsScreenshot()
                 }
@@ -90,7 +90,7 @@ struct HomeScreenshot: ScreenshotItem {
         ) {
             HomeScreen.fixture
         }
-        .background(Color.black)
+        .background(Color(red: 0.93, green: 0.96, blue: 1.0))
     }
 }
 ```
@@ -164,7 +164,6 @@ The second argument is kept only for backward compatibility and is ignored by th
 ### Limitations
 
 - iOS only
-- the root modifier still requires `urlScheme:` in the current API surface, even though the documented execution flow is `ProcessInfo`-based
 - the export script expects an app project with a discoverable `.xcodeproj`
 - image-based scenes require the asset to be bundled in the app target
 
@@ -207,7 +206,7 @@ struct AlarmScreenshot: ScreenshotItem {
             subtitle: "Mix app screens and prepared assets in one export flow",
             image: "alarm"
         )
-        .background(Color.black)
+        .background(Color(red: 0.95, green: 0.95, blue: 0.98))
     }
 }
 ```

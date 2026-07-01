@@ -71,7 +71,7 @@ struct MyApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
-                .screenshot(urlScheme: "myapp") {
+                .screenshot {
                     HomeScreenshot()
                     SettingsScreenshot()
                 }
@@ -90,7 +90,7 @@ struct HomeScreenshot: ScreenshotItem {
         ) {
             HomeScreen.fixture
         }
-        .background(Color.black)
+        .background(Color(red: 0.93, green: 0.96, blue: 1.0))
     }
 }
 ```
@@ -166,7 +166,6 @@ Application Support/
 ### 注意点
 
 - iOS 専用です
-- 現在の API では `.screenshot(urlScheme:)` の引数が残っていますが、現行ドキュメントの実行フローは `ProcessInfo` ベースです
 - export script は `.xcodeproj` を見つけられるアプリプロジェクト前提です
 - 画像ベース scene を使う場合は対象 asset を app target に含めてください
 
@@ -209,7 +208,7 @@ struct AlarmScreenshot: ScreenshotItem {
             subtitle: "実画面と素材画像を同じ export フローで混ぜられる",
             image: "alarm"
         )
-        .background(Color.black)
+        .background(Color(red: 0.95, green: 0.95, blue: 0.98))
     }
 }
 ```
