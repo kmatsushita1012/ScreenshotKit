@@ -110,46 +110,6 @@ func captureCommandRejectsUnknownScene() async throws {
 }
 
 @Test
-func urlParserReadsAndSanitizesDeviceName() {
-    let parser = ScreenshotURLParser()
-    let url = URL(string: "myapp://screenshot/start?deviceName=iPhone%2016%20Pro/Max")!
-
-    let route = parser.parse(url, expectedScheme: "myapp")
-
-    #expect(route?.command == .manifest(deviceName: "iPhone 16 Pro-Max"))
-}
-
-@Test
-func urlParserAlsoAcceptsScreenshotsPathStyle() {
-    let parser = ScreenshotURLParser()
-    let url = URL(string: "myapp:/screenshots/start?deviceName=iPad%20Pro")!
-
-    let route = parser.parse(url, expectedScheme: "myapp")
-
-    #expect(route?.command == .manifest(deviceName: "iPad Pro"))
-}
-
-@Test
-func urlParserAlsoAcceptsScreenshotsHostStyle() {
-    let parser = ScreenshotURLParser()
-    let url = URL(string: "myapp://screenshots/start?deviceName=iPhone%2017%20Pro")!
-
-    let route = parser.parse(url, expectedScheme: "myapp")
-
-    #expect(route?.command == .manifest(deviceName: "iPhone 17 Pro"))
-}
-
-@Test
-func urlParserMatchesSchemeCaseInsensitively() {
-    let parser = ScreenshotURLParser()
-    let url = URL(string: "MyApp://screenshots/start?deviceName=iPad")!
-
-    let route = parser.parse(url, expectedScheme: "myapp")
-
-    #expect(route?.command == .manifest(deviceName: "iPad"))
-}
-
-@Test
 func launchEnvironmentParserReadsManifestEnvironmentVariables() {
     let parser = ScreenshotLaunchEnvironmentParser()
     let processInfo = ProcessInfoFixture(

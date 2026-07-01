@@ -58,19 +58,6 @@ public extension View {
     ) -> some View {
         modifier(
             ScreenshotModifier(
-                urlScheme: nil,
-                items: items()
-            )
-        )
-    }
-
-    func screenshot(
-        urlScheme: String,
-        @ScreenshotItemsBuilder items: () -> [any ScreenshotItem]
-    ) -> some View {
-        modifier(
-            ScreenshotModifier(
-                urlScheme: urlScheme,
                 items: items()
             )
         )
@@ -78,7 +65,6 @@ public extension View {
 }
 
 private struct ScreenshotModifier: ViewModifier {
-    let urlScheme: String?
     let items: [any ScreenshotItem]
 
     func body(content: Content) -> some View {
@@ -93,7 +79,6 @@ private struct ScreenshotModifier: ViewModifier {
 
         return ScreenshotContainerView(
             content: content,
-            urlScheme: urlScheme,
             registry: registry
         )
 #else
@@ -115,9 +100,7 @@ final class ScreenshotContainerViewModel: ObservableObject {
     @Published private(set) var completedCount = 0
     @Published private(set) var totalCount = 0
 
-    private let urlScheme: String?
     private let registry: ScreenshotRegistry
-    private let urlParser: any ScreenshotURLParserProtocol
     private let launchEnvironmentParser: any ScreenshotLaunchEnvironmentParserProtocol
     private let handleUseCase: any HandleScreenshotCommandUseCaseProtocol
     private let progressStore: any ScreenshotProgressStoreProtocol
@@ -126,31 +109,25 @@ final class ScreenshotContainerViewModel: ObservableObject {
     private var activeReadinessKey: String?
 
     init(
-        urlScheme: String?,
         registry: ScreenshotRegistry,
-        urlParser: any ScreenshotURLParserProtocol,
         launchEnvironmentParser: any ScreenshotLaunchEnvironmentParserProtocol,
         handleUseCase: any HandleScreenshotCommandUseCaseProtocol,
         progressStore: any ScreenshotProgressStoreProtocol
     ) {
-        self.urlScheme = urlScheme
         self.registry = registry
-        self.urlParser = urlParser
         self.launchEnvironmentParser = launchEnvironmentParser
         self.handleUseCase = handleUseCase
         self.progressStore = progressStore
     }
 
-    convenience init(urlScheme: String?, registry: ScreenshotRegistry) {
+    convenience init(registry: ScreenshotRegistry) {
         let progressStore = ScreenshotProgressStore(
             fileClient: FileClient(),
             stateFileLocator: ScreenshotStateFileLocator()
         )
 
         self.init(
-            urlScheme: urlScheme,
             registry: registry,
-            urlParser: ScreenshotURLParser(),
             launchEnvironmentParser: ScreenshotLaunchEnvironmentParser(),
             handleUseCase: HandleScreenshotCommandUseCase(
                 progressStore: progressStore,
@@ -158,13 +135,6 @@ final class ScreenshotContainerViewModel: ObservableObject {
             ),
             progressStore: progressStore
         )
-    }
-
-    func handleOpenURL(_ url: URL) {
-        guard let urlScheme else { return }
-        print("ScreenshotKit received URL: \(url.absoluteString)")
-        guard let route = urlParser.parse(url, expectedScheme: urlScheme) else { return }
-        process(command: route.command)
     }
 
     func handleLaunchEnvironmentIfNeeded(processInfo: ProcessInfo = .processInfo) {
@@ -315,22 +285,18 @@ final class ScreenshotContainerViewModel: ObservableObject {
 
 public struct ScreenshotContainerView<Content: View>: View {
     let content: Content
-    let urlScheme: String?
     let registry: ScreenshotRegistry
 
     @StateObject private var viewModel: ScreenshotContainerViewModel
 
     init(
         content: Content,
-        urlScheme: String?,
         registry: ScreenshotRegistry
     ) {
         self.content = content
-        self.urlScheme = urlScheme
         self.registry = registry
         _viewModel = StateObject(
             wrappedValue: ScreenshotContainerViewModel(
-                urlScheme: urlScheme,
                 registry: registry
             )
         )
@@ -352,9 +318,6 @@ public struct ScreenshotContainerView<Content: View>: View {
                     }
                 )
             }
-        }
-        .onOpenURL { url in
-            viewModel.handleOpenURL(url)
         }
         .task {
             viewModel.handleLaunchEnvironmentIfNeeded()

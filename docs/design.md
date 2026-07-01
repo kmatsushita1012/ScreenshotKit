@@ -16,7 +16,6 @@
   - `HandleScreenshotCommandUseCase` が `start` からジョブ列を作る
   - `ValidateScreenshotItemsUseCase` が scene 識別子を検証する
 - `Infrastructure`
-  - `ScreenshotURLParser` が `deviceName` 付き URL を解釈する
   - `ScreenshotLaunchEnvironmentParser` が `ProcessInfo` の launch trigger を解釈する
   - `ScreenshotLocaleProvider` が `Bundle` から locale 一覧を返す
 - `ScreenshotProgressStore` がセッション作成、PNG 保存、manifest、完了/失敗マーカー書き込みを行う
@@ -60,7 +59,7 @@ public struct ScreenshotProgress {
 
 ```mermaid
 flowchart TD
-    A["Shell: ProcessInfo or screenshot/start"] --> B["Trigger Parser"]
+    A["Shell: ProcessInfo"] --> B["Trigger Parser"]
     B --> C["UseCase が locale x scene のジョブ列を生成"]
     C --> D["Host が現在ジョブの View を表示"]
     D --> E["View に locale を注入"]
@@ -84,7 +83,6 @@ flowchart TD
 
 - locale 一覧は API 引数ではなく `Bundle` から自動取得する
 - `.screenshot(...)` は `ProcessInfo` の autostart 環境変数も確認する
-- URL 形式は `myapp://screenshot/start?...`、`myapp://screenshots/start?...`、`myapp:/screenshots/start?...` を受ける
 - launch trigger は `SCREENSHOTKIT_AUTOSTART=1` と `SCREENSHOTKIT_DEVICE_NAME=...` を受ける
 - Shell は `device-id` を指定された場合は 1 台のみ、未指定時は iPhone / iPad の 2 台を並列実行する
 - `ScreenshotItem.id` は内部 scene 識別用に維持する
@@ -100,9 +98,6 @@ flowchart TD
 - `HandleScreenshotCommandUseCase`
   - `start` で全 locale × 全 scene のジョブ列を作る
   - locale または scene が空なら即 finished
-- `ScreenshotURLParser`
-  - `deviceName` を query から読み取る
-  - パス不正や scheme 不一致は `nil`
 - `ScreenshotProgressStore`
   - セッション生成
   - `<device>/<locale>/<id>.png` への保存
