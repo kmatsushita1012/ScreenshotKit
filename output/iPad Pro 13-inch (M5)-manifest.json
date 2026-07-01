@@ -1,0 +1,18 @@
+{
+  "deviceName": "iPad Pro 13-inch (M5)",
+  "entries": [
+    {
+      "localeIdentifier": "en-US",
+      "outputIdentifier": "memo-list",
+      "sceneID": "memo-list",
+      "relativePath": "iPad Pro 13-inch (M5)/en-US/memo-list.png"
+    },
+    {
+      "localeIdentifier": "en-US",
+      "outputIdentifier": "memo-edit",
+      "sceneID": "memo-edit",
+      "relativePath": "iPad Pro 13-inch (M5)/en-US/memo-edit.png"
+    }
+  ],
+  "sessionDirectoryPath": "/Users/matsushitakazuya/Library/Developer/CoreSimulator/Devices/F27BFE5F-76A0-418A-A251-5A0E62742D76/data/Containers/Data/Application/108C36FA-27BE-4FFE-A298-B230338B1729/Library/Application Support/ScreenshotKit/Sessions/session-20260630-144317-991"
+}
