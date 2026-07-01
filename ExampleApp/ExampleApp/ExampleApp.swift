@@ -6,7 +6,7 @@ struct ExampleApp: App {
     var body: some Scene {
         WindowGroup {
             ExampleAppView()
-                .screenshot(urlScheme: "exampleapp") {
+                .screenshot {
                     MemoListScreenshot()
                     MemoEditScreenshot()
                 }
