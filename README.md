@@ -90,18 +90,10 @@ struct HomeScreenshot: ScreenshotItem {
         ) {
             HomeScreen.fixture
         }
-        .background(
-            LinearGradient(
-                colors: [.black, .blue],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        )
+        .background(Color.black)
     }
 }
 ```
-
-`ScreenshotView` is the marketing layout container. The content inside it can be a real screen, a fixture-backed screen, or an image-based scene.
 
 ### 3. Run the exporter from your app project
 
@@ -109,22 +101,9 @@ struct HomeScreenshot: ScreenshotItem {
 ./scripts/export_screenshots.sh ./output
 ```
 
-The script automatically:
+This exports screenshots into `./output`.
 
-- finds the first `.xcodeproj` under the current directory
-- resolves the app scheme and bundle identifier
-- picks available iPhone and iPad simulators
-- builds and installs the app
-- launches the app with `ProcessInfo`-based screenshot commands
-- collects PNG files and `manifest.json`
-
-If you want to target a specific simulator, pass its UDID as the third argument:
-
-```bash
-./scripts/export_screenshots.sh ./output placeholder EBA4AA2F-B463-40A6-B381-C345939380B9
-```
-
-## Detailed Behavior And Advanced Usage
+## Specification
 
 ### How the pipeline works
 
@@ -152,6 +131,44 @@ That means the practical workflow is:
 - define app localizations in Xcode
 - localize your screenshot strings normally
 - export once and let ScreenshotKit generate every supported locale
+
+### Output structure
+
+Inside the app container, ScreenshotKit manages a session directory like this:
+
+```text
+Application Support/
+  ScreenshotKit/
+    Sessions/
+      latest-session.txt
+      session-20260702-120000-000/
+        manifest.json
+        capture-complete
+        iPhone 17 Pro Max/
+          en-US/
+            home.png
+```
+
+The export script then copies the final outputs into your target directory and keeps one manifest per device.
+
+### CLI notes
+
+The current script signature is:
+
+```bash
+./scripts/export_screenshots.sh [output-dir] [legacy-placeholder] [device-id]
+```
+
+The second argument is kept only for backward compatibility and is ignored by the current `ProcessInfo`-based flow.
+
+### Limitations
+
+- iOS only
+- the root modifier still requires `urlScheme:` in the current API surface, even though the documented execution flow is `ProcessInfo`-based
+- the export script expects an app project with a discoverable `.xcodeproj`
+- image-based scenes require the asset to be bundled in the app target
+
+## Advanced Usage
 
 ### `ScreenshotItem.id` and output names
 
@@ -195,35 +212,6 @@ struct AlarmScreenshot: ScreenshotItem {
 }
 ```
 
-### Output structure
-
-Inside the app container, ScreenshotKit manages a session directory like this:
-
-```text
-Application Support/
-  ScreenshotKit/
-    Sessions/
-      latest-session.txt
-      session-20260702-120000-000/
-        manifest.json
-        capture-complete
-        iPhone 17 Pro Max/
-          en-US/
-            home.png
-```
-
-The export script then copies the final outputs into your target directory and keeps one manifest per device.
-
-### CLI notes
-
-The current script signature is:
-
-```bash
-./scripts/export_screenshots.sh [output-dir] [legacy-placeholder] [device-id]
-```
-
-The second argument is kept only for backward compatibility and is ignored by the current `ProcessInfo`-based flow.
-
 ### Example app
 
 [`ExampleApp/`](ExampleApp) shows the minimal integration:
@@ -232,13 +220,6 @@ The second argument is kept only for backward compatibility and is ignored by th
 - [`ExampleApp/ExampleApp/ExampleScreenshotItems.swift`](ExampleApp/ExampleApp/ExampleScreenshotItems.swift)
 
 Use it to confirm the package setup, Preview-based editing, and end-to-end export behavior.
-
-### Limitations
-
-- iOS only
-- the root modifier still requires `urlScheme:` in the current API surface, even though the documented execution flow is `ProcessInfo`-based
-- the export script expects an app project with a discoverable `.xcodeproj`
-- image-based scenes require the asset to be bundled in the app target
 
 ## License
 
