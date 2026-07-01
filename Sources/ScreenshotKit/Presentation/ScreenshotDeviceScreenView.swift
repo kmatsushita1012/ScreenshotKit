@@ -19,6 +19,14 @@ public struct ScreenshotDeviceScreenView<Content: View>: View {
 
     public var body: some View {
         let deviceKind = ScreenshotDeviceKind.current
+        let screenCornerRadius: CGFloat = 44
+        let outerBorderLineWidth = deviceKind.outerBorderLineWidth
+        let innerBorderLineWidth = deviceKind.innerBorderLineWidth
+        let outerFrameInset = innerBorderLineWidth + outerBorderLineWidth / 2
+        let frameCornerRadiusAdjustment: CGFloat = 2
+        let innerFrameCornerRadius = screenCornerRadius + frameCornerRadiusAdjustment
+        let outerFrameCornerRadius = innerFrameCornerRadius + innerBorderLineWidth / 2 + frameCornerRadiusAdjustment
+        let screenShape = RoundedRectangle(cornerRadius: screenCornerRadius, style: .continuous)
 
         ZStack {
             screenshotWrappedContent
@@ -35,14 +43,22 @@ public struct ScreenshotDeviceScreenView<Content: View>: View {
             }
         }
         .background(platformSystemBackgroundColor)
-        .clipShape(roundedRectangle)
+        .clipShape(screenShape)
         .overlay(
-            roundedRectangle
-                .stroke(platformBorderColor, lineWidth: deviceKind.outerBorderLineWidth)
+            RoundedRectangle(
+                cornerRadius: outerFrameCornerRadius,
+                style: .continuous
+            )
+            .stroke(platformBorderColor, lineWidth: outerBorderLineWidth)
+            .padding(-outerFrameInset)
         )
         .overlay(
-            roundedRectangle
-                .stroke(.black, lineWidth: deviceKind.innerBorderLineWidth)
+            RoundedRectangle(
+                cornerRadius: innerFrameCornerRadius,
+                style: .continuous
+            )
+            .stroke(.black, lineWidth: innerBorderLineWidth)
+            .padding(-innerBorderLineWidth / 2)
         )
     }
 
@@ -93,7 +109,7 @@ enum ScreenshotDeviceKind {
         case .phone:
             6
         case .pad:
-            10
+            6
         }
     }
 
@@ -102,12 +118,10 @@ enum ScreenshotDeviceKind {
         case .phone:
             3
         case .pad:
-            5
+            30
         }
     }
 }
-
-private let roundedRectangle = RoundedRectangle(cornerRadius: 44, style: .continuous)
 #if canImport(UIKit)
 private let platformSystemBackgroundColor = Color(.systemBackground)
 private let platformBorderColor = Color(uiColor: UIColor.darkGray)
