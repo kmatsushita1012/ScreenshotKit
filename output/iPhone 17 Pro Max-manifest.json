@@ -1,0 +1,18 @@
+{
+  "deviceName": "iPhone 17 Pro Max",
+  "entries": [
+    {
+      "localeIdentifier": "en-US",
+      "outputIdentifier": "memo-list",
+      "sceneID": "memo-list",
+      "relativePath": "iPhone 17 Pro Max/en-US/memo-list.png"
+    },
+    {
+      "localeIdentifier": "en-US",
+      "outputIdentifier": "memo-edit",
+      "sceneID": "memo-edit",
+      "relativePath": "iPhone 17 Pro Max/en-US/memo-edit.png"
+    }
+  ],
+  "sessionDirectoryPath": "/Users/matsushitakazuya/Library/Developer/CoreSimulator/Devices/C33D6D46-E1FE-4330-9D13-837755291681/data/Containers/Data/Application/6FB00546-00BC-4327-BD08-DCF5DA0957B0/Library/Application Support/ScreenshotKit/Sessions/session-20260701-162040-412"
+}
