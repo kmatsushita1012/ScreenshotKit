@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 import Testing
 @testable import ScreenshotKit
 
@@ -269,6 +270,52 @@ func previewLayoutMetricsCompensateTopInsetOnlyInPreview() {
     )
 }
 
+@Test
+func screenshotStyleEnvironmentDefaultsToResolvedHeroStyle() {
+    let environment = EnvironmentValues()
+
+    #expect(environment.screenshotStyle.resolvedStyleIdentifier == "hero")
+}
+
+@Test
+func defaultScreenshotStyleResolvesToHero() {
+    let heroStyle = AnyScreenshotStyle(HeroScreenshotStyle())
+    let defaultStyle = AnyScreenshotStyle(DefaultScreenshotStyle())
+
+    #expect(heroStyle.resolvedStyleIdentifier == "hero")
+    #expect(defaultStyle.resolvedStyleIdentifier == heroStyle.resolvedStyleIdentifier)
+}
+
+@Test
+func screenshotStyleModifierAcceptsBuiltinShortSyntax() {
+    let view = ScreenshotView(
+        title: "Title",
+        subtitle: "Subtitle"
+    ) {
+        Color.red
+    }
+    .screenshotStyle(.hero)
+
+    let erased = AnyView(view)
+
+    #expect(type(of: erased) == AnyView.self)
+}
+
+@Test
+func screenshotStyleModifierAcceptsCustomStyle() {
+    let view = ScreenshotView(
+        title: "Title",
+        subtitle: "Subtitle"
+    ) {
+        Color.blue
+    }
+    .screenshotStyle(TestScreenshotStyle())
+
+    let erased = AnyView(view)
+
+    #expect(type(of: erased) == AnyView.self)
+}
+
 private actor MockScreenshotProgressStore: ScreenshotProgressStoreProtocol {
     var createdDeviceNames: [String] = []
     var finishedSessionURLs: [URL] = []
@@ -295,6 +342,16 @@ private actor MockScreenshotProgressStore: ScreenshotProgressStoreProtocol {
     }
 
     func markFailed(sessionDirectoryURL: URL, message: String) async throws {}
+}
+
+private struct TestScreenshotStyle: ScreenshotStyle, Sendable {
+    func makeBody(configuration: ScreenshotStyleConfiguration) -> some View {
+        VStack {
+            configuration.title
+            configuration.subtitle
+            configuration.content
+        }
+    }
 }
 
 private struct MockScreenshotLocaleProvider: ScreenshotLocaleProviderProtocol {
