@@ -26,6 +26,10 @@ struct MemoListScreenshot: ScreenshotItem {
     }
 }
 
+#Preview {
+    MemoListScreenshot()
+}
+
 struct MemoEditScreenshot: ScreenshotItem {
     static let id = "memo-edit"
 
@@ -52,9 +56,6 @@ struct MemoEditScreenshot: ScreenshotItem {
     }
 }
 
-#Preview {
-    MemoListScreenshot()
-}
 
 #Preview {
     MemoEditScreenshot()

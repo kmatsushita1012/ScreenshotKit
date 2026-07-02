@@ -271,6 +271,17 @@ func previewLayoutMetricsCompensateTopInsetOnlyInPreview() {
 }
 
 @Test
+func previewLayoutMetricsUseFixedPadTitleOffsetOnlyForPad() {
+    #expect(
+        ScreenshotPreviewLayoutMetrics.titleSubtitleVerticalOffset(for: .phone) == 0
+    )
+    #expect(
+        ScreenshotPreviewLayoutMetrics.titleSubtitleVerticalOffset(for: .pad)
+        == ScreenshotPreviewLayoutMetrics.approximatePadTitleSubtitleVerticalOffset
+    )
+}
+
+@Test
 func screenshotStyleEnvironmentDefaultsToResolvedHeroStyle() {
     let environment = EnvironmentValues()
 

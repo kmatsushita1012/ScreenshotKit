@@ -17,19 +17,39 @@ public extension ScreenshotView where Background == EmptyView, Title == AnyView,
             title: {
                 AnyView(
                     Text(title)
-                        .font(.largeTitle)
+                        .font(ScreenshotDefaultTextStyle.titleFont)
                         .fontWeight(.bold)
                 )
             },
             subtitle: {
                 AnyView(
                     Text(subtitle)
-                        .font(.title3)
+                        .font(ScreenshotDefaultTextStyle.subtitleFont)
                         .foregroundStyle(.secondary)
                 )
             },
             content: content
         )
+    }
+}
+
+private enum ScreenshotDefaultTextStyle {
+    static var titleFont: Font {
+        switch ScreenshotDeviceKind.current {
+        case .phone:
+            .largeTitle
+        case .pad:
+            .system(size: 64, weight: .bold)
+        }
+    }
+
+    static var subtitleFont: Font {
+        switch ScreenshotDeviceKind.current {
+        case .phone:
+            .title3
+        case .pad:
+            .system(size: 34, weight: .regular)
+        }
     }
 }
 

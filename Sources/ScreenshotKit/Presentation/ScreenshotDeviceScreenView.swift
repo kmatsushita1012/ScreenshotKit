@@ -107,7 +107,7 @@ enum ScreenshotDeviceKind {
     var outerBorderLineWidth: CGFloat {
         switch self {
         case .phone:
-            6
+            3
         case .pad:
             6
         }
@@ -116,7 +116,7 @@ enum ScreenshotDeviceKind {
     var innerBorderLineWidth: CGFloat {
         switch self {
         case .phone:
-            3
+            6
         case .pad:
             30
         }
