@@ -9,7 +9,7 @@ Shell は Xcode プロジェクト情報を推定し、iPhone / iPad Simulator �
 
 - UI Test は使わない
 - `simctl screenshot` は使わない
-- `ProcessInfo` または `screenshot/start` を受けたら全 locale × 全 scene を自動巡回する
+- `ProcessInfo` を受けたら全 locale × 全 scene を自動巡回する
 - キャプチャは現在表示中の UIKit view をそのまま PNG 化する
 - サイズは固定値を持たず、起動中デバイスの実描画サイズを使う
 - locale 一覧は `Bundle` の localizations を正とする
@@ -19,7 +19,7 @@ Shell は Xcode プロジェクト情報を推定し、iPhone / iPad Simulator �
 
 ```swift
 AppRootView()
-    .screenshot(urlScheme: "myapp") {
+    .screenshot {
         HomeScreenshot()
         DetailScreenshot()
     }
@@ -58,9 +58,7 @@ ScreenshotView(
 
 - `ScreenshotItem.id`
   - scene の内部識別子
-- `ScreenshotView.id`
-  - 保存ファイル名に使う識別子
-  - 省略時は `001`, `002`, ... を自動採番する
+  - manifest と保存ファイル名にもそのまま使う
 - `ScreenshotView(image:)`
   - `content` の代わりに app asset の画像を phone frame 内へ表示する
   - widget や alarm extension など View 取得が難しい UI の代替に使う
@@ -79,7 +77,7 @@ xcrun simctl launch --terminate-running-process <udid> <bundle-id>
 
 アプリ側の動作:
 
-1. `deviceName` を `ProcessInfo` または URL から取り出す
+1. `deviceName` を `ProcessInfo` から取り出す
 2. `Bundle` から locale 一覧を取得する
 3. `locale × scene` のジョブ列を作る
 4. 1件ずつ表示する

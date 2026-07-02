@@ -40,7 +40,7 @@ public struct HandleScreenshotCommandUseCase: HandleScreenshotCommandUseCaseProt
                     ScreenshotManifestEntry(
                         sceneID: $0.id,
                         localeIdentifier: localeIdentifier,
-                        outputIdentifier: $0.fallbackOutputIdentifier,
+                        outputIdentifier: $0.id,
                         relativePath: nil
                     )
                 }
@@ -79,7 +79,7 @@ public struct HandleScreenshotCommandUseCase: HandleScreenshotCommandUseCaseProt
                 manifest: manifest
             )
         case let .capture(deviceName, sceneID, localeIdentifier, sessionDirectoryPath):
-            guard let item = items.first(where: { $0.id == sceneID }) else {
+            guard items.contains(where: { $0.id == sceneID }) else {
                 throw ScreenshotKitError.unknownSceneIdentifier(sceneID)
             }
 
@@ -87,8 +87,7 @@ public struct HandleScreenshotCommandUseCase: HandleScreenshotCommandUseCaseProt
                 mode: .capture,
                 current: ScreenshotCaptureJob(
                     sceneID: sceneID,
-                    localeIdentifier: localeIdentifier,
-                    fallbackOutputIdentifier: item.fallbackOutputIdentifier
+                    localeIdentifier: localeIdentifier
                 ),
                 pending: [],
                 finished: false,

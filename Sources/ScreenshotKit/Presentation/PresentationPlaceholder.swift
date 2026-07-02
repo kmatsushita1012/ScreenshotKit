@@ -33,12 +33,10 @@ private func makeRegistry(from items: [any ScreenshotItem]) -> ScreenshotRegistr
     for (index, item) in items.enumerated() {
         let metatype = type(of: item)
         let id = metatype.id
-        let fallbackOutputIdentifier = String(format: "%03d", index + 1)
 
         descriptors.append(
             ScreenshotDescriptor(
-                id: id,
-                fallbackOutputIdentifier: fallbackOutputIdentifier
+                id: id
             )
         )
         mutableFactories[id] = { AnyView(item) }
@@ -54,12 +52,10 @@ private func makeRegistry(from items: [any ScreenshotItem]) -> ScreenshotRegistr
 
 public extension View {
     func screenshot(
-        urlScheme: String,
         @ScreenshotItemsBuilder items: () -> [any ScreenshotItem]
     ) -> some View {
         modifier(
             ScreenshotModifier(
-                urlScheme: urlScheme,
                 items: items()
             )
         )
@@ -67,7 +63,6 @@ public extension View {
 }
 
 private struct ScreenshotModifier: ViewModifier {
-    let urlScheme: String
     let items: [any ScreenshotItem]
 
     func body(content: Content) -> some View {
@@ -82,7 +77,6 @@ private struct ScreenshotModifier: ViewModifier {
 
         return ScreenshotContainerView(
             content: content,
-            urlScheme: urlScheme,
             registry: registry
         )
 #else
@@ -104,9 +98,7 @@ final class ScreenshotContainerViewModel: ObservableObject {
     @Published private(set) var completedCount = 0
     @Published private(set) var totalCount = 0
 
-    private let urlScheme: String
     private let registry: ScreenshotRegistry
-    private let urlParser: any ScreenshotURLParserProtocol
     private let launchEnvironmentParser: any ScreenshotLaunchEnvironmentParserProtocol
     private let handleUseCase: any HandleScreenshotCommandUseCaseProtocol
     private let progressStore: any ScreenshotProgressStoreProtocol
@@ -115,31 +107,25 @@ final class ScreenshotContainerViewModel: ObservableObject {
     private var activeReadinessKey: String?
 
     init(
-        urlScheme: String,
         registry: ScreenshotRegistry,
-        urlParser: any ScreenshotURLParserProtocol,
         launchEnvironmentParser: any ScreenshotLaunchEnvironmentParserProtocol,
         handleUseCase: any HandleScreenshotCommandUseCaseProtocol,
         progressStore: any ScreenshotProgressStoreProtocol
     ) {
-        self.urlScheme = urlScheme
         self.registry = registry
-        self.urlParser = urlParser
         self.launchEnvironmentParser = launchEnvironmentParser
         self.handleUseCase = handleUseCase
         self.progressStore = progressStore
     }
 
-    convenience init(urlScheme: String, registry: ScreenshotRegistry) {
+    convenience init(registry: ScreenshotRegistry) {
         let progressStore = ScreenshotProgressStore(
             fileClient: FileClient(),
             stateFileLocator: ScreenshotStateFileLocator()
         )
 
         self.init(
-            urlScheme: urlScheme,
             registry: registry,
-            urlParser: ScreenshotURLParser(),
             launchEnvironmentParser: ScreenshotLaunchEnvironmentParser(),
             handleUseCase: HandleScreenshotCommandUseCase(
                 progressStore: progressStore,
@@ -147,12 +133,6 @@ final class ScreenshotContainerViewModel: ObservableObject {
             ),
             progressStore: progressStore
         )
-    }
-
-    func handleOpenURL(_ url: URL) {
-        print("ScreenshotKit received URL: \(url.absoluteString)")
-        guard let route = urlParser.parse(url, expectedScheme: urlScheme) else { return }
-        process(command: route.command)
     }
 
     func handleLaunchEnvironmentIfNeeded(processInfo: ProcessInfo = .processInfo) {
@@ -254,9 +234,8 @@ final class ScreenshotContainerViewModel: ObservableObject {
         guard activeReadinessKey != readinessKey else { return }
         activeReadinessKey = readinessKey
 
-        let outputIdentifier = sanitizedOutputIdentifier(
-            readiness.outputIdentifier
-        ) ?? currentJob.fallbackOutputIdentifier
+        let outputIdentifier = sanitizedOutputIdentifier(currentJob.outputIdentifier)
+            ?? currentJob.sceneID
         let message = "\(Self.readinessLogPrefix) sceneID=\(currentJob.sceneID) locale=\(currentJob.localeIdentifier) outputIdentifier=\(outputIdentifier)"
         let sessionDirectoryURL = URL(fileURLWithPath: sessionDirectoryPath, isDirectory: true)
 
@@ -303,22 +282,18 @@ final class ScreenshotContainerViewModel: ObservableObject {
 
 public struct ScreenshotContainerView<Content: View>: View {
     let content: Content
-    let urlScheme: String
     let registry: ScreenshotRegistry
 
     @StateObject private var viewModel: ScreenshotContainerViewModel
 
     init(
         content: Content,
-        urlScheme: String,
         registry: ScreenshotRegistry
     ) {
         self.content = content
-        self.urlScheme = urlScheme
         self.registry = registry
         _viewModel = StateObject(
             wrappedValue: ScreenshotContainerViewModel(
-                urlScheme: urlScheme,
                 registry: registry
             )
         )
@@ -340,9 +315,6 @@ public struct ScreenshotContainerView<Content: View>: View {
                     }
                 )
             }
-        }
-        .onOpenURL { url in
-            viewModel.handleOpenURL(url)
         }
         .task {
             viewModel.handleLaunchEnvironmentIfNeeded()
@@ -380,7 +352,6 @@ struct ScreenshotHostView: View {
 @MainActor
 struct ScreenshotSceneReadiness {
     let taskID: String
-    let outputIdentifier: String?
 }
 
 private struct LiveRenderedScreenshotScene: UIViewControllerRepresentable {
@@ -405,6 +376,7 @@ private struct LiveRenderedScreenshotScene: UIViewControllerRepresentable {
     func updateUIViewController(_ uiViewController: CaptureHostingViewController, context: Context) {
         context.coordinator.prepareForUpdate(taskID: taskID)
         uiViewController.rootView = makeRootView(for: context.coordinator)
+        uiViewController.setNeedsUpdateOfHomeIndicatorAutoHidden()
         uiViewController.onLayout = { [weak coordinator = context.coordinator] view in
             coordinator?.captureViewDidLayout(view)
         }
@@ -412,14 +384,13 @@ private struct LiveRenderedScreenshotScene: UIViewControllerRepresentable {
 
     private func makeRootView(for coordinator: Coordinator) -> CaptureMetadataReportingRoot {
         CaptureMetadataReportingRoot(
-            taskID: taskID,
             content: AnyView(
                 content.environment(\.locale, Locale(identifier: localeIdentifier))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .statusBarHidden(true)
             ),
-            onOutputIdentifierResolved: { outputIdentifier in
-                coordinator.outputIdentifierDidResolve(outputIdentifier)
+            onReady: {
+                coordinator.contentDidBecomeReady()
             }
         )
     }
@@ -428,8 +399,7 @@ private struct LiveRenderedScreenshotScene: UIViewControllerRepresentable {
     final class Coordinator {
         private let onSceneReady: (ScreenshotSceneReadiness) -> Void
         private var taskID = ""
-        private var outputIdentifier: String?
-        private var didResolveOutputIdentifier = false
+        private var didResolveContent = false
         private var didPublish = false
         private var hasLaidOutView = false
 
@@ -443,15 +413,13 @@ private struct LiveRenderedScreenshotScene: UIViewControllerRepresentable {
             }
 
             self.taskID = taskID
-            outputIdentifier = nil
-            didResolveOutputIdentifier = false
+            didResolveContent = false
             didPublish = false
             hasLaidOutView = false
         }
 
-        func outputIdentifierDidResolve(_ outputIdentifier: String?) {
-            self.outputIdentifier = outputIdentifier
-            didResolveOutputIdentifier = true
+        func contentDidBecomeReady() {
+            didResolveContent = true
             publishIfReady()
         }
 
@@ -462,14 +430,13 @@ private struct LiveRenderedScreenshotScene: UIViewControllerRepresentable {
 
         private func publishIfReady() {
             guard !didPublish else { return }
-            guard didResolveOutputIdentifier else { return }
+            guard didResolveContent else { return }
             guard hasLaidOutView else { return }
 
             didPublish = true
             onSceneReady(
                 ScreenshotSceneReadiness(
-                    taskID: taskID,
-                    outputIdentifier: outputIdentifier
+                    taskID: taskID
                 )
             )
         }
@@ -485,6 +452,10 @@ private final class CaptureHostingViewController: UIHostingController<CaptureMet
         view.isOpaque = false
     }
 
+    override var prefersHomeIndicatorAutoHidden: Bool {
+        true
+    }
+
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         onLayout?(view)
@@ -492,26 +463,26 @@ private final class CaptureHostingViewController: UIHostingController<CaptureMet
 }
 
 private struct CaptureMetadataReportingRoot: View {
-    let taskID: String
     let content: AnyView
-    let onOutputIdentifierResolved: (String?) -> Void
+    let onReady: () -> Void
 
-    @State private var hasResolvedOutputIdentifier = false
+    @State private var hasReportedReady = false
 
     var body: some View {
         content
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .onPreferenceChange(ScreenshotOutputIdentifierPreferenceKey.self) { value in
-                guard !hasResolvedOutputIdentifier else { return }
-                hasResolvedOutputIdentifier = true
-                onOutputIdentifierResolved(value)
+            .onPreferenceChange(ScreenshotSceneRenderedPreferenceKey.self) { isRendered in
+                guard isRendered else { return }
+                guard !hasReportedReady else { return }
+                hasReportedReady = true
+                onReady()
             }
             .task {
-                guard !hasResolvedOutputIdentifier else { return }
+                guard !hasReportedReady else { return }
                 try? await Task.sleep(for: .milliseconds(50))
-                guard !hasResolvedOutputIdentifier else { return }
-                hasResolvedOutputIdentifier = true
-                onOutputIdentifierResolved(nil)
+                guard !hasReportedReady else { return }
+                hasReportedReady = true
+                onReady()
             }
     }
 }

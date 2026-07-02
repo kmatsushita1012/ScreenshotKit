@@ -179,6 +179,7 @@ private final class ScreenshotContentContainerViewController<Content: View>: UIV
         hostingController.didMove(toParent: self)
 
         configureNavigationBarIfNeeded()
+        propagateHomeIndicatorAutoHiddenUpdate()
     }
 
     override func viewDidLayoutSubviews() {
@@ -190,6 +191,7 @@ private final class ScreenshotContentContainerViewController<Content: View>: UIV
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         configureNavigationBarIfNeeded()
+        propagateHomeIndicatorAutoHiddenUpdate()
     }
 
     override func viewDidAppear(_ animated: Bool) {
@@ -198,6 +200,7 @@ private final class ScreenshotContentContainerViewController<Content: View>: UIV
         dumpParentChainAfterAppearanceIfNeeded()
         configureNavigationBarIfNeeded()
         dumpPresentationViewHierarchyAfterAppearanceIfNeeded()
+        propagateHomeIndicatorAutoHiddenUpdate()
     }
 
     func update(rootView: Content) {
@@ -206,6 +209,18 @@ private final class ScreenshotContentContainerViewController<Content: View>: UIV
             content: rootView
         )
         didConfigureNavigationBar = false
+        propagateHomeIndicatorAutoHiddenUpdate()
+    }
+
+    override var prefersHomeIndicatorAutoHidden: Bool {
+        true
+    }
+
+    private func propagateHomeIndicatorAutoHiddenUpdate() {
+        setNeedsUpdateOfHomeIndicatorAutoHidden()
+        parent?.setNeedsUpdateOfHomeIndicatorAutoHidden()
+        navigationController?.setNeedsUpdateOfHomeIndicatorAutoHidden()
+        nearestPresentationHostingController()?.setNeedsUpdateOfHomeIndicatorAutoHidden()
     }
 
     private func configureNavigationBarIfNeeded() {

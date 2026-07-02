@@ -14,8 +14,8 @@ func manifestCommandCreatesPlannedEntriesForAllLocalesAndScenes() async throws {
     let progress = try await useCase.execute(
         command: .manifest(deviceName: "iPhone 16 Pro"),
         items: [
-            ScreenshotDescriptor(id: "home", fallbackOutputIdentifier: "001"),
-            ScreenshotDescriptor(id: "detail", fallbackOutputIdentifier: "002")
+            ScreenshotDescriptor(id: "home"),
+            ScreenshotDescriptor(id: "detail")
         ]
     )
 
@@ -29,7 +29,7 @@ func manifestCommandCreatesPlannedEntriesForAllLocalesAndScenes() async throws {
     #expect(progress.manifest?.entries.count == 4)
     #expect(progress.manifest?.entries[0].sceneID == "home")
     #expect(progress.manifest?.entries[0].localeIdentifier == "ja")
-    #expect(progress.manifest?.entries[0].outputIdentifier == "001")
+    #expect(progress.manifest?.entries[0].outputIdentifier == "home")
     #expect(progress.manifest?.entries[0].relativePath == nil)
     #expect(await store.createdDeviceNames == ["iPhone 16 Pro"])
 }
@@ -72,8 +72,8 @@ func captureCommandReturnsSingleRequestedScene() async throws {
             sessionDirectoryPath: "/tmp/session"
         ),
         items: [
-            ScreenshotDescriptor(id: "home", fallbackOutputIdentifier: "001"),
-            ScreenshotDescriptor(id: "detail", fallbackOutputIdentifier: "002")
+            ScreenshotDescriptor(id: "home"),
+            ScreenshotDescriptor(id: "detail")
         ]
     )
 
@@ -81,7 +81,7 @@ func captureCommandReturnsSingleRequestedScene() async throws {
     #expect(progress.finished == false)
     #expect(progress.current?.sceneID == "detail")
     #expect(progress.current?.localeIdentifier == "en-US")
-    #expect(progress.current?.fallbackOutputIdentifier == "002")
+    #expect(progress.current?.outputIdentifier == "detail")
     #expect(progress.sessionDirectoryPath == "/tmp/session")
     #expect(progress.totalCount == 1)
     #expect(progress.manifest == nil)
@@ -104,50 +104,10 @@ func captureCommandRejectsUnknownScene() async throws {
                 sessionDirectoryPath: "/tmp/session"
             ),
             items: [
-                ScreenshotDescriptor(id: "home", fallbackOutputIdentifier: "001")
+                ScreenshotDescriptor(id: "home")
             ]
         )
     }
-}
-
-@Test
-func urlParserReadsAndSanitizesDeviceName() {
-    let parser = ScreenshotURLParser()
-    let url = URL(string: "myapp://screenshot/start?deviceName=iPhone%2016%20Pro/Max")!
-
-    let route = parser.parse(url, expectedScheme: "myapp")
-
-    #expect(route?.command == .manifest(deviceName: "iPhone 16 Pro-Max"))
-}
-
-@Test
-func urlParserAlsoAcceptsScreenshotsPathStyle() {
-    let parser = ScreenshotURLParser()
-    let url = URL(string: "myapp:/screenshots/start?deviceName=iPad%20Pro")!
-
-    let route = parser.parse(url, expectedScheme: "myapp")
-
-    #expect(route?.command == .manifest(deviceName: "iPad Pro"))
-}
-
-@Test
-func urlParserAlsoAcceptsScreenshotsHostStyle() {
-    let parser = ScreenshotURLParser()
-    let url = URL(string: "myapp://screenshots/start?deviceName=iPhone%2017%20Pro")!
-
-    let route = parser.parse(url, expectedScheme: "myapp")
-
-    #expect(route?.command == .manifest(deviceName: "iPhone 17 Pro"))
-}
-
-@Test
-func urlParserMatchesSchemeCaseInsensitively() {
-    let parser = ScreenshotURLParser()
-    let url = URL(string: "MyApp://screenshots/start?deviceName=iPad")!
-
-    let route = parser.parse(url, expectedScheme: "myapp")
-
-    #expect(route?.command == .manifest(deviceName: "iPad"))
 }
 
 @Test

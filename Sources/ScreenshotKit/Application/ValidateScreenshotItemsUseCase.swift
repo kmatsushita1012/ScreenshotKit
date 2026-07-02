@@ -19,7 +19,6 @@ public struct ValidateScreenshotItemsUseCase: ValidateScreenshotItemsUseCaseProt
 
         for item in items {
             if item.id.isEmpty { throw ScreenshotKitError.emptyIdentifier }
-            if item.fallbackOutputIdentifier.isEmpty { throw ScreenshotKitError.fileWriteFailed }
 
             if !idSet.insert(item.id).inserted {
                 throw ScreenshotKitError.duplicateIdentifier(item.id)

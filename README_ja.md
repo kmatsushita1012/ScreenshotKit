@@ -1,0 +1,207 @@
+# ScreenshotKit
+
+[English README](README.md)
+
+ScreenshotKit は、SwiftUI アプリから App Store 用スクリーンショットを量産するための Swift Package です。
+
+スクリーンショット用の画面を SwiftUI で定義し、`#Preview` で見た目を詰め、そのまま iPhone / iPad・全ローカライズへ書き出せます。UI Test には依存しません。
+
+## 何ができるか
+
+ScreenshotKit は、スクショ制作を「アプリ本体とは別の作業」ではなく、プロダクトコードの延長として扱いたいときに向いています。
+
+- App Store 用のスクリーンショットを iPhone / iPad 向けにまとめて生成できる
+- SwiftUI と `#Preview` で見た目を編集できる
+- 本番コードや fixture の変更をすぐスクショに反映できる
+- UI Test ベースの重い撮影フローを持たず、軽量に回せる
+- コード上で定義したスクリーンショット一覧と `.xcodeproj` の対応言語をベースに、必要なケースをまとめて出力できる
+- スクショ制作をアプリプロジェクトの中に閉じ込めたまま運用できる
+
+![ScreenshotKit workflow](docs/images/readme-preview-workflow.png)
+
+## クイックスタート
+
+### 前提
+
+- iOS 17 以降
+- Swift 6
+- Xcode 26 以降
+- `xcrun`, `xcodebuild`, `python3` が使えること
+
+### 1. パッケージを追加する
+
+Xcode の `Add Package Dependency...` から次を追加します。
+
+```text
+https://github.com/kmatsushita1012/ScreenshotKit.git
+```
+
+`Package.swift` なら次です。
+
+```swift
+dependencies: [
+    .package(url: "https://github.com/kmatsushita1012/ScreenshotKit.git", from: "0.1.0")
+]
+```
+
+パッケージ追加と同じタイミングで、exporter は自動では入らないため [scripts/export_screenshots.sh](scripts/export_screenshots.sh) をアプリ側リポジトリへ別途配置してください。
+
+### 2. ルート View にスクショ対象を登録する
+
+```swift
+import ScreenshotKit
+import SwiftUI
+
+@main
+struct MyApp: App {
+    var body: some Scene {
+        WindowGroup {
+            RootView()
+                .screenshot {
+                    HomeScreenshot()
+                    SettingsScreenshot()
+                }
+        }
+    }
+}
+
+struct HomeScreenshot: ScreenshotItem {
+    static let id = "home"
+
+    var body: some View {
+        ScreenshotView(
+            title: "すべてを一箇所で確認",
+            subtitle: "進捗・状態・最近の動きをまとめて見せる"
+        ) {
+            HomeScreen.fixture
+        }
+        .background(Color(red: 0.93, green: 0.96, blue: 1.0))
+    }
+}
+```
+
+### 3. アプリのプロジェクトルートで書き出す
+
+```bash
+./scripts/export_screenshots.sh ./output
+```
+
+これで `./output` にスクリーンショットを書き出せます。
+
+## 仕様
+
+### 起動フロー
+
+1. export script がアプリを `manifest` モードで起動する
+2. ScreenshotKit が登録済み `ScreenshotItem` と localization 一覧を読む
+3. `locale × scene` の manifest を作る
+4. script が各キャプチャジョブごとにアプリを再起動する
+5. ScreenshotKit が指定 scene を描画して readiness を通知する
+6. script が Simulator 上の表示結果を PNG として保存する
+
+UI Test を介さず、役割分担がはっきりしているのがこの方式の強みです。
+
+### ローカライズ
+
+ScreenshotKit は、ビルドされたアプリ bundle に含まれる localization を読むため、実際の出力対象はコード上のスクリーンショット定義と `.xcodeproj` の対応言語で決まります。
+
+- `Base` は無視する
+- `ja` は `ja-JP`、`en` は `en-US` のように正規化する
+- localization が明示されていなければ development localization、さらに無ければ現在 locale を使う
+
+運用としては次の理解で十分です。
+
+- Xcode 側で対応言語を設定する
+- スクショ内の文言も通常どおりローカライズする
+- 1 回の export で対応言語をまとめて生成する
+
+`.xcodeproj` は export script 側で自動発見に使われ、そこから app build settings を引き当てます。言語の最終的な列挙は、実際に build された app bundle を正として行われます。
+
+### 出力構造
+
+アプリコンテナ内では、セッションごとに次のような構造を管理します。
+
+```text
+Application Support/
+  ScreenshotKit/
+    Sessions/
+      latest-session.txt
+      session-20260702-120000-000/
+        manifest.json
+        capture-complete
+        iPhone 17 Pro Max/
+          en-US/
+            home.png
+```
+
+その後 export script が最終成果物を指定ディレクトリへコピーし、device ごとに manifest も残します。
+
+### CLI 補足
+
+現在の script のシグネチャは次です。
+
+```bash
+./scripts/export_screenshots.sh [output-dir] [device-id]
+```
+
+### 注意点
+
+- iOS 専用です
+- export script は `.xcodeproj` を見つけられるアプリプロジェクト前提です
+- 画像ベース scene を使う場合は対象 asset を app target に含めてください
+
+## 応用
+
+### `ScreenshotItem.id` と出力ファイル名
+
+`ScreenshotItem.id` は各スクリーンショット scene の単一の識別子です。
+
+この値が scene の切り替え、manifest の記録、最終的な PNG ファイル名にそのまま使われます。たとえば `detail` なら `detail.png` になります。
+
+```swift
+struct DetailScreenshot: ScreenshotItem {
+    static let id = "detail"
+
+    var body: some View {
+        ScreenshotView(
+            title: "詳細をじっくり見せる",
+            subtitle: "1 つの操作に集中した訴求ができる"
+        ) {
+            DetailScreen.fixture
+        }
+        .background(Color.indigo)
+    }
+}
+```
+
+### 画像ベースの scene
+
+Widget や extension UI のように、通常のアプリ画面として組みにくいものは画像ベースでも扱えます。
+
+```swift
+struct AlarmScreenshot: ScreenshotItem {
+    static let id = "alarm"
+
+    var body: some View {
+        ScreenshotView(
+            title: "拡張 UI もそのまま訴求",
+            subtitle: "実画面と素材画像を同じ export フローで混ぜられる",
+            image: "alarm"
+        )
+        .background(Color(red: 0.95, green: 0.95, blue: 0.98))
+    }
+}
+```
+
+### ExampleApp
+
+最小構成のサンプルは [`ExampleApp/`](ExampleApp) に入っています。
+
+- [`ExampleApp/ExampleApp/ExampleApp.swift`](ExampleApp/ExampleApp/ExampleApp.swift)
+- [`ExampleApp/ExampleApp/ExampleScreenshotItems.swift`](ExampleApp/ExampleApp/ExampleScreenshotItems.swift)
+
+組み込み方法、Preview ベースの編集感、export の流れを確認する出発点として使えます。
+
+## License
+
+必要に応じて追加してください。

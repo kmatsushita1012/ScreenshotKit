@@ -7,13 +7,11 @@ import SwiftUI
 
 public extension ScreenshotView where Background == EmptyView, Title == AnyView, Subtitle == AnyView {
     init(
-        id: String? = nil,
         title: String,
         subtitle: String,
         @ViewBuilder content: @escaping () -> Content
     ) {
         self.init(
-            id: id,
             title: {
                 AnyView(
                     Text(title)
@@ -55,14 +53,12 @@ private enum ScreenshotDefaultTextStyle {
 
 public extension ScreenshotView where Background == EmptyView, Content == AnyView, Title == AnyView, Subtitle == AnyView {
     init(
-        id: String? = nil,
         title: String,
         subtitle: String,
         image assetName: String,
         imageBundle: Bundle? = .main
     ) {
         self.init(
-            id: id,
             title: title,
             subtitle: subtitle,
             content: {
@@ -80,12 +76,10 @@ public extension ScreenshotView where Background == EmptyView, Content == AnyVie
 
 public extension ScreenshotView where Background == EmptyView, Content == AnyView, Title == EmptyView, Subtitle == EmptyView {
     init(
-        id: String? = nil,
         image assetName: String,
         imageBundle: Bundle? = .main
     ) {
         self.init(
-            id: id,
             title: { EmptyView() },
             subtitle: { EmptyView() },
             content: {
