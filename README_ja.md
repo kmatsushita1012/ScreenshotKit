@@ -73,7 +73,7 @@ struct HomeScreenshot: ScreenshotItem {
             title: "すべてを一箇所で確認",
             subtitle: "進捗・状態・最近の動きをまとめて見せる"
         ) {
-            HomeScreen.fixture
+            HomeContentView(item: .fixture)
         }
         .background(Color(red: 0.93, green: 0.96, blue: 1.0))
     }
@@ -167,7 +167,7 @@ struct DetailScreenshot: ScreenshotItem {
             title: "詳細をじっくり見せる",
             subtitle: "1 つの操作に集中した訴求ができる"
         ) {
-            DetailScreen.fixture
+            DetailContentView(item: .fixture)
         }
         .background(Color.indigo)
     }

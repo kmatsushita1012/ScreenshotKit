@@ -73,7 +73,7 @@ struct HomeScreenshot: ScreenshotItem {
             title: "Everything in one place",
             subtitle: "Review progress, status, and recent activity at a glance"
         ) {
-            HomeScreen.fixture
+            HomeContentView(item: .fixture)
         }
         .background(Color(red: 0.93, green: 0.96, blue: 1.0))
     }
@@ -165,7 +165,7 @@ struct DetailScreenshot: ScreenshotItem {
             title: "Detail",
             subtitle: "Focus on one workflow at a time"
         ) {
-            DetailScreen.fixture
+            DetailContentView(item: .fixture)
         }
         .background(Color.indigo)
     }
