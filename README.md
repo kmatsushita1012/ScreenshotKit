@@ -40,7 +40,7 @@ Or in `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/kmatsushita1012/ScreenshotKit.git", from: "0.1.0")
+    .package(url: "https://github.com/kmatsushita1012/ScreenshotKit.git", from: "1.0.0")
 ]
 ```
 
