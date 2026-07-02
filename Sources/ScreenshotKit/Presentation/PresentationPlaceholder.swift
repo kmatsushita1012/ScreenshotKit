@@ -33,12 +33,10 @@ private func makeRegistry(from items: [any ScreenshotItem]) -> ScreenshotRegistr
     for (index, item) in items.enumerated() {
         let metatype = type(of: item)
         let id = metatype.id
-        let fallbackOutputIdentifier = String(format: "%03d", index + 1)
 
         descriptors.append(
             ScreenshotDescriptor(
-                id: id,
-                fallbackOutputIdentifier: fallbackOutputIdentifier
+                id: id
             )
         )
         mutableFactories[id] = { AnyView(item) }
@@ -236,9 +234,8 @@ final class ScreenshotContainerViewModel: ObservableObject {
         guard activeReadinessKey != readinessKey else { return }
         activeReadinessKey = readinessKey
 
-        let outputIdentifier = sanitizedOutputIdentifier(
-            readiness.outputIdentifier
-        ) ?? currentJob.fallbackOutputIdentifier
+        let outputIdentifier = sanitizedOutputIdentifier(currentJob.outputIdentifier)
+            ?? currentJob.sceneID
         let message = "\(Self.readinessLogPrefix) sceneID=\(currentJob.sceneID) locale=\(currentJob.localeIdentifier) outputIdentifier=\(outputIdentifier)"
         let sessionDirectoryURL = URL(fileURLWithPath: sessionDirectoryPath, isDirectory: true)
 
@@ -355,7 +352,6 @@ struct ScreenshotHostView: View {
 @MainActor
 struct ScreenshotSceneReadiness {
     let taskID: String
-    let outputIdentifier: String?
 }
 
 private struct LiveRenderedScreenshotScene: UIViewControllerRepresentable {
@@ -380,6 +376,7 @@ private struct LiveRenderedScreenshotScene: UIViewControllerRepresentable {
     func updateUIViewController(_ uiViewController: CaptureHostingViewController, context: Context) {
         context.coordinator.prepareForUpdate(taskID: taskID)
         uiViewController.rootView = makeRootView(for: context.coordinator)
+        uiViewController.setNeedsUpdateOfHomeIndicatorAutoHidden()
         uiViewController.onLayout = { [weak coordinator = context.coordinator] view in
             coordinator?.captureViewDidLayout(view)
         }
@@ -387,14 +384,13 @@ private struct LiveRenderedScreenshotScene: UIViewControllerRepresentable {
 
     private func makeRootView(for coordinator: Coordinator) -> CaptureMetadataReportingRoot {
         CaptureMetadataReportingRoot(
-            taskID: taskID,
             content: AnyView(
                 content.environment(\.locale, Locale(identifier: localeIdentifier))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .statusBarHidden(true)
             ),
-            onOutputIdentifierResolved: { outputIdentifier in
-                coordinator.outputIdentifierDidResolve(outputIdentifier)
+            onReady: {
+                coordinator.contentDidBecomeReady()
             }
         )
     }
@@ -403,8 +399,7 @@ private struct LiveRenderedScreenshotScene: UIViewControllerRepresentable {
     final class Coordinator {
         private let onSceneReady: (ScreenshotSceneReadiness) -> Void
         private var taskID = ""
-        private var outputIdentifier: String?
-        private var didResolveOutputIdentifier = false
+        private var didResolveContent = false
         private var didPublish = false
         private var hasLaidOutView = false
 
@@ -418,15 +413,13 @@ private struct LiveRenderedScreenshotScene: UIViewControllerRepresentable {
             }
 
             self.taskID = taskID
-            outputIdentifier = nil
-            didResolveOutputIdentifier = false
+            didResolveContent = false
             didPublish = false
             hasLaidOutView = false
         }
 
-        func outputIdentifierDidResolve(_ outputIdentifier: String?) {
-            self.outputIdentifier = outputIdentifier
-            didResolveOutputIdentifier = true
+        func contentDidBecomeReady() {
+            didResolveContent = true
             publishIfReady()
         }
 
@@ -437,14 +430,13 @@ private struct LiveRenderedScreenshotScene: UIViewControllerRepresentable {
 
         private func publishIfReady() {
             guard !didPublish else { return }
-            guard didResolveOutputIdentifier else { return }
+            guard didResolveContent else { return }
             guard hasLaidOutView else { return }
 
             didPublish = true
             onSceneReady(
                 ScreenshotSceneReadiness(
-                    taskID: taskID,
-                    outputIdentifier: outputIdentifier
+                    taskID: taskID
                 )
             )
         }
@@ -460,6 +452,10 @@ private final class CaptureHostingViewController: UIHostingController<CaptureMet
         view.isOpaque = false
     }
 
+    override var prefersHomeIndicatorAutoHidden: Bool {
+        true
+    }
+
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         onLayout?(view)
@@ -467,26 +463,26 @@ private final class CaptureHostingViewController: UIHostingController<CaptureMet
 }
 
 private struct CaptureMetadataReportingRoot: View {
-    let taskID: String
     let content: AnyView
-    let onOutputIdentifierResolved: (String?) -> Void
+    let onReady: () -> Void
 
-    @State private var hasResolvedOutputIdentifier = false
+    @State private var hasReportedReady = false
 
     var body: some View {
         content
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .onPreferenceChange(ScreenshotOutputIdentifierPreferenceKey.self) { value in
-                guard !hasResolvedOutputIdentifier else { return }
-                hasResolvedOutputIdentifier = true
-                onOutputIdentifierResolved(value)
+            .onPreferenceChange(ScreenshotSceneRenderedPreferenceKey.self) { isRendered in
+                guard isRendered else { return }
+                guard !hasReportedReady else { return }
+                hasReportedReady = true
+                onReady()
             }
             .task {
-                guard !hasResolvedOutputIdentifier else { return }
+                guard !hasReportedReady else { return }
                 try? await Task.sleep(for: .milliseconds(50))
-                guard !hasResolvedOutputIdentifier else { return }
-                hasResolvedOutputIdentifier = true
-                onOutputIdentifierResolved(nil)
+                guard !hasReportedReady else { return }
+                hasReportedReady = true
+                onReady()
             }
     }
 }

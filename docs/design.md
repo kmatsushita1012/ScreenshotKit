@@ -31,7 +31,6 @@ public enum ScreenshotCommand {
 ```swift
 public struct ScreenshotDescriptor {
     public let id: String
-    public let fallbackOutputIdentifier: String
 }
 ```
 
@@ -39,7 +38,6 @@ public struct ScreenshotDescriptor {
 public struct ScreenshotCaptureJob {
     public let sceneID: String
     public let localeIdentifier: String
-    public let fallbackOutputIdentifier: String
 }
 ```
 
@@ -85,9 +83,7 @@ flowchart TD
 - `.screenshot(...)` は `ProcessInfo` の autostart 環境変数も確認する
 - launch trigger は `SCREENSHOTKIT_AUTOSTART=1` と `SCREENSHOTKIT_DEVICE_NAME=...` を受ける
 - Shell は `device-id` を指定された場合は 1 台のみ、未指定時は iPhone / iPad の 2 台を並列実行する
-- `ScreenshotItem.id` は内部 scene 識別用に維持する
-- 保存用 `id` は `ScreenshotView(id:)` に寄せる
-- `ScreenshotView(id:)` 未指定時は登録順で 3 桁連番を付与する
+- `ScreenshotItem.id` を scene 識別、manifest、保存ファイル名の単一の source of truth とする
 - `ScreenshotView(image:)` は content 部分だけを asset 画像へ差し替える
 - 背景は `ScreenshotView` の initializer ではなく通常の `.background(...)` に寄せる
 - 保存は `id` 解決後に直列で進める

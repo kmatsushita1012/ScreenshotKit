@@ -58,9 +58,7 @@ ScreenshotView(
 
 - `ScreenshotItem.id`
   - scene の内部識別子
-- `ScreenshotView.id`
-  - 保存ファイル名に使う識別子
-  - 省略時は `001`, `002`, ... を自動採番する
+  - manifest と保存ファイル名にもそのまま使う
 - `ScreenshotView(image:)`
   - `content` の代わりに app asset の画像を phone frame 内へ表示する
   - widget や alarm extension など View 取得が難しい UI の代替に使う

@@ -70,7 +70,6 @@ struct HomeScreenshot: ScreenshotItem {
 
     var body: some View {
         ScreenshotView(
-            id: Self.id,
             title: "Everything in one place",
             subtitle: "Review progress, status, and recent activity at a glance"
         ) {
@@ -153,9 +152,9 @@ The current script signature is:
 
 ### `ScreenshotItem.id` and output names
 
-`ScreenshotItem.id` identifies the scene in the capture pipeline.
+`ScreenshotItem.id` is the single identifier for each screenshot scene.
 
-`ScreenshotView(id:)` controls the output file name. If you omit it, ScreenshotKit falls back to a zero-padded sequence such as `001`, `002`, and `003`.
+The same value is used for scene selection, manifest entries, and output file names such as `detail.png`.
 
 ```swift
 struct DetailScreenshot: ScreenshotItem {
@@ -183,7 +182,6 @@ struct AlarmScreenshot: ScreenshotItem {
 
     var body: some View {
         ScreenshotView(
-            id: Self.id,
             title: "Promote extension UI directly",
             subtitle: "Mix app screens and prepared assets in one export flow",
             image: "alarm"

@@ -6,7 +6,6 @@ struct MemoListScreenshot: ScreenshotItem {
 
     var body: some View {
         ScreenshotView(
-            id: Self.id,
             title: "Stay on top of every note",
             subtitle: "Pinned memos, recent updates, and quick context at a glance"
         ) {
@@ -35,7 +34,6 @@ struct MemoEditScreenshot: ScreenshotItem {
 
     var body: some View {
         ScreenshotView(
-            id: Self.id,
             title: "Edit without losing focus",
             subtitle: "Title, category, and content stay together in one calm workspace"
         ) {

@@ -8,18 +8,15 @@ import SwiftUI
 public struct ScreenshotView<Title: View, Subtitle: View, Content: View, Background: View>: View {
     @Environment(\.screenshotStyle) private var currentStyle
 
-    private let outputIdentifier: String?
     private let titleView: () -> Title
     private let subtitleView: () -> Subtitle
     private let contentBuilder: () -> Content
 
     public init(
-        id: String? = nil,
         @ViewBuilder title: @escaping () -> Title,
         @ViewBuilder subtitle: @escaping () -> Subtitle,
         @ViewBuilder content: @escaping () -> Content
     ) {
-        self.outputIdentifier = id
         self.titleView = title
         self.subtitleView = subtitle
         self.contentBuilder = content
@@ -34,17 +31,17 @@ public struct ScreenshotView<Title: View, Subtitle: View, Content: View, Backgro
             )
         )
         .preference(
-            key: ScreenshotOutputIdentifierPreferenceKey.self,
-            value: outputIdentifier
+            key: ScreenshotSceneRenderedPreferenceKey.self,
+            value: true
         )
     }
 }
 
-struct ScreenshotOutputIdentifierPreferenceKey: PreferenceKey {
-    static var defaultValue: String? { nil }
+struct ScreenshotSceneRenderedPreferenceKey: PreferenceKey {
+    static var defaultValue: Bool { false }
 
-    static func reduce(value: inout String?, nextValue: () -> String?) {
-        value = nextValue() ?? value
+    static func reduce(value: inout Bool, nextValue: () -> Bool) {
+        value = value || nextValue()
     }
 }
 

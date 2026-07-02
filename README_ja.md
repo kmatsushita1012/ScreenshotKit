@@ -70,7 +70,6 @@ struct HomeScreenshot: ScreenshotItem {
 
     var body: some View {
         ScreenshotView(
-            id: Self.id,
             title: "すべてを一箇所で確認",
             subtitle: "進捗・状態・最近の動きをまとめて見せる"
         ) {
@@ -155,9 +154,9 @@ Application Support/
 
 ### `ScreenshotItem.id` と出力ファイル名
 
-`ScreenshotItem.id` は、キャプチャジョブ内で scene を識別するための ID です。
+`ScreenshotItem.id` は各スクリーンショット scene の単一の識別子です。
 
-`ScreenshotView(id:)` は、最終的な PNG のファイル名に使われます。省略した場合は `001`, `002`, `003` のような連番になります。
+この値が scene の切り替え、manifest の記録、最終的な PNG ファイル名にそのまま使われます。たとえば `detail` なら `detail.png` になります。
 
 ```swift
 struct DetailScreenshot: ScreenshotItem {
@@ -185,7 +184,6 @@ struct AlarmScreenshot: ScreenshotItem {
 
     var body: some View {
         ScreenshotView(
-            id: Self.id,
             title: "拡張 UI もそのまま訴求",
             subtitle: "実画面と素材画像を同じ export フローで混ぜられる",
             image: "alarm"
