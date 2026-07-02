@@ -14,8 +14,8 @@ ScreenshotKit is built for teams that want App Store screenshots to live next to
 - Edit layouts in SwiftUI and iterate visually with `#Preview`
 - Reflect production UI changes immediately by rendering real app views or fixture-backed screens
 - Avoid a UI-test-driven capture flow and keep the export path lightweight
-- Export all supported localizations automatically from the built app bundle
-- Keep the pipeline predictable with a manifest-first flow and file-based outputs
+- Generate every screenshot case from the scenes you define in code and the languages configured in your `.xcodeproj`
+- Keep screenshot production inside the app project instead of maintaining a separate capture matrix
 
 ![ScreenshotKit workflow](docs/images/readme-preview-workflow.png)
 
@@ -43,6 +43,8 @@ dependencies: [
     .package(url: "https://github.com/kmatsushita1012/ScreenshotKit.git", from: "0.1.0")
 ]
 ```
+
+When you add the package, also copy [scripts/export_screenshots.sh](scripts/export_screenshots.sh) into your app repository because the exporter is not installed there automatically.
 
 ### 2. Register screenshot scenes in your root view
 
@@ -89,9 +91,7 @@ This exports screenshots into `./output`.
 
 ## Specification
 
-### How the pipeline works
-
-The current documented flow is `ProcessInfo`-based.
+### Capture flow
 
 1. The export script launches the app in `manifest` mode.
 2. ScreenshotKit reads registered `ScreenshotItem`s and bundle localizations.
@@ -104,7 +104,7 @@ This keeps the orchestration explicit and avoids a UI test layer.
 
 ### Localization behavior
 
-ScreenshotKit enumerates localizations from the built app bundle.
+ScreenshotKit reads the localizations included in the built app bundle, so the export set is effectively driven by the screenshot scenes you define in code and the languages configured in your `.xcodeproj`.
 
 - `Base` is ignored
 - simple language codes are normalized such as `ja -> ja-JP` and `en -> en-US`
@@ -140,10 +140,8 @@ The export script then copies the final outputs into your target directory and k
 The current script signature is:
 
 ```bash
-./scripts/export_screenshots.sh [output-dir] [legacy-placeholder] [device-id]
+./scripts/export_screenshots.sh [output-dir] [device-id]
 ```
-
-The second argument is kept only for backward compatibility and is ignored by the current `ProcessInfo`-based flow.
 
 ### Limitations
 

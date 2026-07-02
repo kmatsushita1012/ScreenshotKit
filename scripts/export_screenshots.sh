@@ -2,14 +2,13 @@
 
 set -euo pipefail
 
-if [ "$#" -gt 3 ]; then
-  echo "usage: $0 [output-dir] [url-scheme] [device-id]" >&2
+if [ "$#" -gt 2 ]; then
+  echo "usage: $0 [output-dir] [device-id]" >&2
   exit 1
 fi
 
 OUTPUT_ROOT="${1:-./output}"
-URL_SCHEME_OVERRIDE="${2:-}"
-DEVICE_ID_OVERRIDE="${3:-}"
+DEVICE_ID_OVERRIDE="${2:-}"
 READINESS_TIMEOUT_SECONDS=15
 READINESS_FALLBACK_DELAY_SECONDS=1
 POST_READINESS_SETTLE_SECONDS=1
@@ -47,7 +46,7 @@ sanitize_component() {
 }
 
 infer_project_settings() {
-  python3 - "$PWD" "$URL_SCHEME_OVERRIDE" <<'PY'
+  python3 - "$PWD" <<'PY'
 import json
 import os
 import subprocess

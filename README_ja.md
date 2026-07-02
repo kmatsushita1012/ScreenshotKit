@@ -14,8 +14,8 @@ ScreenshotKit は、スクショ制作を「アプリ本体とは別の作業」
 - SwiftUI と `#Preview` で見た目を編集できる
 - 本番コードや fixture の変更をすぐスクショに反映できる
 - UI Test ベースの重い撮影フローを持たず、軽量に回せる
-- ビルド済みアプリの localization を列挙して、対応言語をまとめて出力できる
-- manifest ベースで順番に進むので、出力の見通しがよくパイプラインが安定しやすい
+- コード上で定義したスクリーンショット一覧と `.xcodeproj` の対応言語をベースに、必要なケースをまとめて出力できる
+- スクショ制作をアプリプロジェクトの中に閉じ込めたまま運用できる
 
 ![ScreenshotKit workflow](docs/images/readme-preview-workflow.png)
 
@@ -43,6 +43,8 @@ dependencies: [
     .package(url: "https://github.com/kmatsushita1012/ScreenshotKit.git", from: "0.1.0")
 ]
 ```
+
+パッケージ追加と同じタイミングで、exporter は自動では入らないため [scripts/export_screenshots.sh](scripts/export_screenshots.sh) をアプリ側リポジトリへ別途配置してください。
 
 ### 2. ルート View にスクショ対象を登録する
 
@@ -89,9 +91,7 @@ struct HomeScreenshot: ScreenshotItem {
 
 ## 仕様
 
-### いまの起動フロー
-
-現在ドキュメント化している実行フローは `ProcessInfo` ベースです。
+### 起動フロー
 
 1. export script がアプリを `manifest` モードで起動する
 2. ScreenshotKit が登録済み `ScreenshotItem` と localization 一覧を読む
@@ -104,7 +104,7 @@ UI Test を介さず、役割分担がはっきりしているのがこの方式
 
 ### ローカライズ
 
-ScreenshotKit は、ビルドされたアプリ bundle の localization を列挙します。
+ScreenshotKit は、ビルドされたアプリ bundle に含まれる localization を読むため、実際の出力対象はコード上のスクリーンショット定義と `.xcodeproj` の対応言語で決まります。
 
 - `Base` は無視する
 - `ja` は `ja-JP`、`en` は `en-US` のように正規化する
@@ -142,10 +142,8 @@ Application Support/
 現在の script のシグネチャは次です。
 
 ```bash
-./scripts/export_screenshots.sh [output-dir] [legacy-placeholder] [device-id]
+./scripts/export_screenshots.sh [output-dir] [device-id]
 ```
-
-2 引数目は後方互換のためだけに残っており、現在の `ProcessInfo` ベースフローでは使いません。
 
 ### 注意点
 
