@@ -17,23 +17,7 @@ ScreenshotKit is built for teams that want App Store screenshots to live next to
 - Export all supported localizations automatically from the built app bundle
 - Keep the pipeline predictable with a manifest-first flow and file-based outputs
 
-In practice, one export run produces a structure like this:
-
-```text
-output/
-  iPhone 17 Pro Max/
-    en-US/
-      memo-list.png
-      memo-edit.png
-    ja-JP/
-      memo-list.png
-      memo-edit.png
-  iPhone 17 Pro Max-manifest.json
-  iPad Pro 13-inch (M5)/
-    en-US/
-      memo-list.png
-      memo-edit.png
-```
+![ScreenshotKit workflow](docs/images/readme-preview-workflow.png)
 
 ## Quick Start
 

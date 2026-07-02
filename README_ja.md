@@ -17,23 +17,7 @@ ScreenshotKit は、スクショ制作を「アプリ本体とは別の作業」
 - ビルド済みアプリの localization を列挙して、対応言語をまとめて出力できる
 - manifest ベースで順番に進むので、出力の見通しがよくパイプラインが安定しやすい
 
-実際の出力は、たとえば次のような形になります。
-
-```text
-output/
-  iPhone 17 Pro Max/
-    en-US/
-      memo-list.png
-      memo-edit.png
-    ja-JP/
-      memo-list.png
-      memo-edit.png
-  iPhone 17 Pro Max-manifest.json
-  iPad Pro 13-inch (M5)/
-    en-US/
-      memo-list.png
-      memo-edit.png
-```
+![ScreenshotKit workflow](docs/images/readme-preview-workflow.png)
 
 ## クイックスタート
 
