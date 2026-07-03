@@ -542,9 +542,28 @@ wait_for_capture_readiness() {
   local ready_pattern
   local marker_path="$session_dir/capture-complete"
   local error_path="$session_dir/capture-error.txt"
+  local locale_launch_values
+  local apple_languages_value
+  local apple_locale_value
 
   ready_pattern="SCREENSHOTKIT_READY sceneID=${scene_id} locale=${locale_identifier} "
   log_file="$(mktemp /tmp/screenshotkit-log.XXXXXX)"
+
+  locale_launch_values="$(python3 - "$locale_identifier" <<'PY'
+import sys
+
+locale_identifier = sys.argv[1].replace("_", "-")
+language_identifier = locale_identifier.split("-", 1)[0]
+apple_languages = [locale_identifier]
+if language_identifier and language_identifier != locale_identifier:
+    apple_languages.append(language_identifier)
+
+print("(" + ",".join(f'"{value}"' for value in apple_languages) + ")")
+print(locale_identifier.replace("-", "_"))
+PY
+)"
+  apple_languages_value="$(printf '%s\n' "$locale_launch_values" | sed -n '1p')"
+  apple_locale_value="$(printf '%s\n' "$locale_launch_values" | sed -n '2p')"
 
   xcrun simctl spawn "$udid" log stream \
     --style compact \
@@ -568,7 +587,10 @@ wait_for_capture_readiness() {
   SIMCTL_CHILD_SCREENSHOTKIT_SCENE_ID="$scene_id" \
   SIMCTL_CHILD_SCREENSHOTKIT_LOCALE="$locale_identifier" \
   SIMCTL_CHILD_SCREENSHOTKIT_SESSION_PATH="$session_dir" \
-  xcrun simctl launch --terminate-running-process "$udid" "$bundle_id" >/dev/null
+  xcrun simctl launch --terminate-running-process "$udid" "$bundle_id" \
+    -AppleLanguages "$apple_languages_value" \
+    -AppleLocale "$apple_locale_value" \
+    >/dev/null
 
   for _ in $(seq 1 "$READINESS_TIMEOUT_SECONDS"); do
     if [ -f "$error_path" ]; then

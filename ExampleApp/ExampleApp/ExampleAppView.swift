@@ -32,9 +32,9 @@ struct ExampleAppView: View {
 
     private func addMemo() {
         let newMemo = Memo(
-            title: ExampleAppStrings.localized("memo.new.title", locale: .autoupdatingCurrent),
+            title: String(localized: "memo.new.title"),
             body: "",
-            category: ExampleAppStrings.localized("memo.new.category", locale: .autoupdatingCurrent),
+            category: String(localized: "memo.new.category"),
             updatedAt: .now,
             isPinned: false
         )
@@ -254,7 +254,7 @@ struct Memo: Identifiable, Hashable {
 
     var bodyPreview: String {
         let trimmed = body.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? ExampleAppStrings.localized("memo.preview.empty", locale: .autoupdatingCurrent) : trimmed
+        return trimmed.isEmpty ? String(localized: "memo.preview.empty") : trimmed
     }
 
     var wordCount: Int {
@@ -265,30 +265,30 @@ struct Memo: Identifiable, Hashable {
 extension Memo {
     static let sampleNotebook: [Memo] = [
         Memo(
-            title: "Release checklist",
-            body: "Polish the onboarding copy.\nVerify screenshot export on iPhone and iPad.\nSend the build to stakeholders before noon.",
-            category: "Work",
+            title: String(localized: "memo.sample.releaseChecklist.title"),
+            body: String(localized: "memo.sample.releaseChecklist.body"),
+            category: String(localized: "memo.sample.releaseChecklist.category"),
             updatedAt: .now.addingTimeInterval(-2_700),
             isPinned: true
         ),
         Memo(
-            title: "Weekend groceries",
-            body: "Coffee beans, lemons, yogurt, spinach, sparkling water, and pasta for dinner.",
-            category: "Home",
+            title: String(localized: "memo.sample.weekendGroceries.title"),
+            body: String(localized: "memo.sample.weekendGroceries.body"),
+            category: String(localized: "memo.sample.weekendGroceries.category"),
             updatedAt: .now.addingTimeInterval(-18_000),
             isPinned: true
         ),
         Memo(
-            title: "Design notes",
-            body: "Keep the memo list quiet and readable. Editing should feel direct, with the title and body visible at once.",
-            category: "Ideas",
+            title: String(localized: "memo.sample.designNotes.title"),
+            body: String(localized: "memo.sample.designNotes.body"),
+            category: String(localized: "memo.sample.designNotes.category"),
             updatedAt: .now.addingTimeInterval(-82_000),
             isPinned: false
         ),
         Memo(
-            title: "Travel plan",
-            body: "Book the early train, save the hotel address offline, and double-check the museum reservation number.",
-            category: "Personal",
+            title: String(localized: "memo.sample.travelPlan.title"),
+            body: String(localized: "memo.sample.travelPlan.body"),
+            category: String(localized: "memo.sample.travelPlan.category"),
             updatedAt: .now.addingTimeInterval(-172_000),
             isPinned: false
         )
@@ -296,56 +296,35 @@ extension Memo {
 
     static let screenshotList: [Memo] = [
         Memo(
-            title: "Release checklist",
-            body: "Polish the onboarding copy.\nVerify screenshot export on iPhone and iPad.\nSend the build to stakeholders before noon.",
-            category: "Work",
+            title: String(localized: "memo.sample.releaseChecklist.title"),
+            body: String(localized: "memo.sample.releaseChecklist.body"),
+            category: String(localized: "memo.sample.releaseChecklist.category"),
             updatedAt: .now.addingTimeInterval(-2_700),
             isPinned: true
         ),
         Memo(
-            title: "Design notes",
-            body: "Keep the memo list quiet and readable. Editing should feel direct, with the title and body visible at once.",
-            category: "Ideas",
+            title: String(localized: "memo.sample.designNotes.title"),
+            body: String(localized: "memo.sample.designNotes.body"),
+            category: String(localized: "memo.sample.designNotes.category"),
             updatedAt: .now.addingTimeInterval(-82_000),
             isPinned: false
         ),
         Memo(
-            title: "Travel plan",
-            body: "Book the early train, save the hotel address offline, and double-check the museum reservation number.",
-            category: "Personal",
+            title: String(localized: "memo.sample.travelPlan.title"),
+            body: String(localized: "memo.sample.travelPlan.body"),
+            category: String(localized: "memo.sample.travelPlan.category"),
             updatedAt: .now.addingTimeInterval(-172_000),
             isPinned: false
         )
     ]
 
     static let screenshotDraft = Memo(
-        title: "Release checklist",
-        body: "Polish the onboarding copy.\nVerify screenshot export on iPhone and iPad.\nSend the build to stakeholders before noon.",
-        category: "Work",
+        title: String(localized: "memo.sample.releaseChecklist.title"),
+        body: String(localized: "memo.sample.releaseChecklist.body"),
+        category: String(localized: "memo.sample.releaseChecklist.category"),
         updatedAt: .now.addingTimeInterval(-2_700),
         isPinned: true
     )
-}
-
-enum ExampleAppStrings {
-    static func localized(_ key: String, locale: Locale) -> String {
-        let languageCode = locale.identifier
-            .replacingOccurrences(of: "_", with: "-")
-            .split(separator: "-")
-            .first
-            .map(String.init)
-
-        if let languageCode,
-           let path = Bundle.main.path(forResource: languageCode, ofType: "lproj"),
-           let bundle = Bundle(path: path) {
-            let value = bundle.localizedString(forKey: key, value: nil, table: nil)
-            if value != key {
-                return value
-            }
-        }
-
-        return Bundle.main.localizedString(forKey: key, value: nil, table: nil)
-    }
 }
 
 #Preview {

@@ -3,12 +3,11 @@ import SwiftUI
 
 struct MemoListScreenshot: ScreenshotItem {
     static let id = "memo-list"
-    @Environment(\.locale) private var locale
 
     var body: some View {
         ScreenshotView(
-            title: ExampleAppStrings.localized("screenshot.memoList.title", locale: locale),
-            subtitle: ExampleAppStrings.localized("screenshot.memoList.subtitle", locale: locale)
+            title: String(localized: "screenshot.memoList.title"),
+            subtitle: String(localized: "screenshot.memoList.subtitle")
         ) {
             MemoListView(memos: Memo.screenshotList)
         }
@@ -32,12 +31,11 @@ struct MemoListScreenshot: ScreenshotItem {
 
 struct MemoEditScreenshot: ScreenshotItem {
     static let id = "memo-edit"
-    @Environment(\.locale) private var locale
 
     var body: some View {
         ScreenshotView(
-            title: ExampleAppStrings.localized("screenshot.memoEdit.title", locale: locale),
-            subtitle: ExampleAppStrings.localized("screenshot.memoEdit.subtitle", locale: locale)
+            title: String(localized: "screenshot.memoEdit.title"),
+            subtitle: String(localized: "screenshot.memoEdit.subtitle")
         ) {
             MemoEditView(memo: Memo.screenshotDraft)
         }
