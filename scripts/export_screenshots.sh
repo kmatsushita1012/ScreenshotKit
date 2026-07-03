@@ -185,23 +185,33 @@ def iphone_score(name):
     generation_match = re.search(r"iPhone (\d+)", name)
     generation = int(generation_match.group(1)) if generation_match else 0
 
-    tier = 0
+    flagship_tier = 0
     if "Pro Max" in name:
-        tier = 5
+        flagship_tier = 4
     elif "Pro" in name:
-        tier = 4
+        flagship_tier = 3
     elif "Plus" in name:
-        tier = 3
-    elif "Air" in name:
-        tier = 2
-    elif "e" in name:
-        tier = 1
+        flagship_tier = 2
+    elif re.search(r"\be\b", name):
+        flagship_tier = 0
+    else:
+        flagship_tier = 1
 
-    return (generation, tier, name)
+    return (flagship_tier, generation, name)
 
 def ipad_score(name):
     if not name.startswith("iPad"):
         return None
+
+    family_score = 0
+    if "iPad Pro" in name:
+        family_score = 4
+    elif "iPad Air" in name:
+        family_score = 3
+    elif "iPad" == name or name.startswith("iPad ("):
+        family_score = 2
+    elif "iPad mini" in name:
+        family_score = 1
 
     chip_match = re.search(r"\(M(\d+)\)", name)
     chip_generation = int(chip_match.group(1)) if chip_match else 0
@@ -212,35 +222,11 @@ def ipad_score(name):
     elif "11-inch" in name:
         size_score = 2
 
-    family_score = 0
-    if "iPad Pro" in name:
-        family_score = 4
-    elif "iPad Air" in name:
-        family_score = 3
-    elif "iPad mini" in name:
-        family_score = 1
-    else:
-        family_score = 2
-
     memory_score = 1 if "16GB" in name else 0
 
-    return (chip_generation, family_score, size_score, memory_score, name)
+    return (family_score, chip_generation, size_score, memory_score, name)
 
-def exact_device(name):
-    for device in devices_for_runtime:
-        if device.get("name") == name:
-            return {
-                "name": name,
-                "type_identifier": type_identifier_for_device(device),
-                "udid": device.get("udid"),
-            }
-    return None
-
-def pick(kind_label, preferred_names, scorer):
-    for preferred_name in preferred_names:
-        device = exact_device(preferred_name)
-        if device is not None:
-            return device
+def pick(kind_label, scorer):
 
     candidates = []
     for device in devices_for_runtime:
@@ -265,8 +251,8 @@ def pick(kind_label, preferred_names, scorer):
 
 print(json.dumps({
     "runtime_id": runtime_id,
-    "iphone": pick("iPhone", ["ScreenShot iPhone"], iphone_score),
-    "ipad": pick("iPad", ["ScreenShot iPad"], ipad_score),
+    "iphone": pick("iPhone", iphone_score),
+    "ipad": pick("iPad", ipad_score),
 }))
 PY
 }
