@@ -117,38 +117,66 @@ import json
 import re
 import subprocess
 
-runtimes = json.loads(subprocess.check_output(["xcrun", "simctl", "list", "runtimes", "--json"], text=True))
-devices = json.loads(subprocess.check_output(["xcrun", "simctl", "list", "devices", "--json"], text=True))
-device_types = json.loads(subprocess.check_output(["xcrun", "simctl", "list", "devicetypes", "--json"], text=True))
+runtimes = json.loads(subprocess.check_output(["xcrun", "simctl", "list", "--json", "runtimes", "available"], text=True))
+devices = json.loads(subprocess.check_output(["xcrun", "simctl", "list", "--json", "devices", "available"], text=True))
+device_types = json.loads(subprocess.check_output(["xcrun", "simctl", "list", "--json", "devicetypes"], text=True))
 
 available_runtimes = [
-    runtime for runtime in runtimes.get("runtimes", [])
-    if runtime.get("isAvailable") and runtime.get("identifier", "").startswith("com.apple.CoreSimulator.SimRuntime.iOS-")
+    runtime
+    for runtime in runtimes.get("runtimes", [])
+    if runtime.get("isAvailable") and runtime.get("platform") == "iOS"
 ]
 if not available_runtimes:
     raise SystemExit("No available iOS runtimes")
 
-def version_key(runtime):
-    version = runtime.get("version") or runtime.get("identifier", "").split("iOS-")[-1].replace("-", ".")
+def numeric_version_key(version_string):
     parts = []
-    for token in version.replace("-", ".").split("."):
+    for token in (version_string or "").replace("-", ".").split("."):
+        if not token:
+            continue
         try:
             parts.append(int(token))
         except ValueError:
             parts.append(0)
     return tuple(parts)
 
-runtime = max(available_runtimes, key=version_key)
+runtime = max(
+    available_runtimes,
+    key=lambda item: numeric_version_key(item.get("version") or item.get("identifier", "").split("iOS-")[-1]),
+)
 runtime_id = runtime["identifier"]
 
-type_map = {item["name"]: item["identifier"] for item in device_types.get("devicetypes", [])}
-devices_for_runtime = devices.get("devices", {}).get(runtime_id, [])
-
-available_names = {
-    device["name"]
-    for device in devices_for_runtime
+devices_for_runtime = [
+    device
+    for device in devices.get("devices", {}).get(runtime_id, [])
     if device.get("isAvailable", True)
+]
+if not devices_for_runtime:
+    raise SystemExit(f"No available devices found for runtime {runtime_id}")
+
+device_type_by_name = {
+    item.get("name"): item
+    for item in device_types.get("devicetypes", [])
+    if item.get("name")
 }
+
+def type_identifier_for(name):
+    device_type = device_type_by_name.get(name)
+    if not device_type:
+        raise SystemExit(f"Device type not found for {name}")
+    identifier = device_type.get("identifier")
+    if not identifier:
+        raise SystemExit(f"Device type identifier missing for {name}")
+    return identifier
+
+def type_identifier_for_device(device):
+    identifier = device.get("deviceTypeIdentifier")
+    if identifier:
+        return identifier
+    name = device.get("name")
+    if not name:
+        raise SystemExit("Device name missing")
+    return type_identifier_for(name)
 
 def iphone_score(name):
     if not name.startswith("iPhone "):
@@ -172,7 +200,7 @@ def iphone_score(name):
     return (generation, tier, name)
 
 def ipad_score(name):
-    if not name.startswith("iPad "):
+    if not name.startswith("iPad"):
         return None
 
     chip_match = re.search(r"\(M(\d+)\)", name)
@@ -198,37 +226,47 @@ def ipad_score(name):
 
     return (chip_generation, family_score, size_score, memory_score, name)
 
-def pick(prefix, scorer):
+def exact_device(name):
+    for device in devices_for_runtime:
+        if device.get("name") == name:
+            return {
+                "name": name,
+                "type_identifier": type_identifier_for_device(device),
+                "udid": device.get("udid"),
+            }
+    return None
+
+def pick(kind_label, preferred_names, scorer):
+    for preferred_name in preferred_names:
+        device = exact_device(preferred_name)
+        if device is not None:
+            return device
+
     candidates = []
-    for name, identifier in type_map.items():
-        if not name.startswith(prefix):
-            continue
-        if name not in available_names:
+    for device in devices_for_runtime:
+        name = device.get("name")
+        if not name:
             continue
         score = scorer(name)
         if score is None:
             continue
-        udid = None
-        for device in devices_for_runtime:
-            if device.get("name") == name and device.get("isAvailable", True):
-                udid = device["udid"]
-                break
-        candidates.append((score, name, identifier, udid))
+        candidates.append((score, name, device.get("udid")))
 
     if not candidates:
-        raise SystemExit(f"No available {prefix} device found for runtime {runtime_id}")
+        raise SystemExit(f"No available {kind_label} device found for runtime {runtime_id}")
 
-    _, name, identifier, udid = max(candidates, key=lambda item: item[0])
+    _, name, udid = max(candidates, key=lambda item: item[0])
+    selected_device = next(device for device in devices_for_runtime if device.get("udid") == udid)
     return {
         "name": name,
-        "type_identifier": identifier,
+        "type_identifier": type_identifier_for_device(selected_device),
         "udid": udid,
     }
 
 print(json.dumps({
     "runtime_id": runtime_id,
-    "iphone": pick("iPhone ", iphone_score),
-    "ipad": pick("iPad ", ipad_score),
+    "iphone": pick("iPhone", ["ScreenShot iPhone"], iphone_score),
+    "ipad": pick("iPad", ["ScreenShot iPad"], ipad_score),
 }))
 PY
 }

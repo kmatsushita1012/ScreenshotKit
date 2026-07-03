@@ -21,9 +21,9 @@ struct ExampleAppView: View {
                 MemoEditView(memo: $memos[selectedMemoIndex])
             } else {
                 ContentUnavailableView(
-                    "Select a Memo",
+                    "empty.selectMemo.title",
                     systemImage: "note.text",
-                    description: Text("Choose a memo from the list to edit its title and body.")
+                    description: Text("empty.selectMemo.description")
                 )
             }
         }
@@ -32,9 +32,9 @@ struct ExampleAppView: View {
 
     private func addMemo() {
         let newMemo = Memo(
-            title: "New Memo",
+            title: ExampleAppStrings.localized("memo.new.title", locale: .autoupdatingCurrent),
             body: "",
-            category: "Inbox",
+            category: ExampleAppStrings.localized("memo.new.category", locale: .autoupdatingCurrent),
             updatedAt: .now,
             isPinned: false
         )
@@ -85,12 +85,12 @@ struct MemoListView: View {
             }
         }
         .listStyle(.insetGrouped)
-        .navigationTitle("Memos")
+        .navigationTitle(Text("memo.list.navigationTitle"))
         .toolbar {
             if let onCreateMemo {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(action: onCreateMemo) {
-                        Label("New Memo", systemImage: "square.and.pencil")
+                        Label("memo.new.button", systemImage: "square.and.pencil")
                     }
                 }
             }
@@ -100,7 +100,7 @@ struct MemoListView: View {
     @ViewBuilder
     private var memoSections: some View {
         if !pinnedMemos.isEmpty {
-            Section("Pinned") {
+            Section("memo.section.pinned") {
                 ForEach(pinnedMemos) { memo in
                     MemoRow(memo: memo)
                         .tag(memo.id)
@@ -108,7 +108,7 @@ struct MemoListView: View {
             }
         }
 
-        Section("All Notes") {
+        Section("memo.section.allNotes") {
             ForEach(otherMemos) { memo in
                 MemoRow(memo: memo)
                     .tag(memo.id)
@@ -118,6 +118,7 @@ struct MemoListView: View {
 }
 
 struct MemoEditView: View {
+    @Environment(\.locale) private var locale
     private let memoBinding: Binding<Memo>?
     @State private var localMemo: Memo
 
@@ -137,24 +138,29 @@ struct MemoEditView: View {
 
     var body: some View {
         Form {
-            Section("Details") {
-                TextField("Title", text: draft.title)
+            Section("memo.edit.section.details") {
+                TextField("memo.edit.field.title", text: draft.title)
                     .font(.title2.weight(.semibold))
-                TextField("Category", text: draft.category)
-                Toggle("Pinned", isOn: draft.isPinned)
+                TextField("memo.edit.field.category", text: draft.category)
+                Toggle("memo.edit.field.pinned", isOn: draft.isPinned)
             }
 
-            Section("Content") {
+            Section("memo.edit.section.content") {
                 TextEditor(text: draft.body)
                     .frame(minHeight: 260)
             }
 
-            Section("Status") {
-                LabeledContent("Last Edited") {
-                    Text(draft.wrappedValue.updatedAt.formatted(date: .abbreviated, time: .shortened))
+            Section("memo.edit.section.status") {
+                LabeledContent("memo.edit.status.lastEdited") {
+                    Text(
+                        draft.wrappedValue.updatedAt.formatted(
+                            Date.FormatStyle(date: .abbreviated, time: .shortened)
+                                .locale(locale)
+                        )
+                    )
                         .foregroundStyle(.secondary)
                 }
-                LabeledContent("Words") {
+                LabeledContent("memo.edit.status.words") {
                     Text("\(draft.wrappedValue.wordCount)")
                         .foregroundStyle(.secondary)
                 }
@@ -162,11 +168,11 @@ struct MemoEditView: View {
         }
         .scrollContentBackground(.hidden)
         .background(Color(.systemGroupedBackground))
-        .navigationTitle(draft.wrappedValue.title.isEmpty ? "Untitled" : draft.wrappedValue.title)
+        .navigationTitle(draft.wrappedValue.title.isEmpty ? Text("memo.edit.untitled") : Text(verbatim: draft.wrappedValue.title))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button("Done") {}
+                Button("memo.edit.done") {}
                     .fontWeight(.semibold)
             }
         }
@@ -248,7 +254,7 @@ struct Memo: Identifiable, Hashable {
 
     var bodyPreview: String {
         let trimmed = body.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? "No additional text yet." : trimmed
+        return trimmed.isEmpty ? ExampleAppStrings.localized("memo.preview.empty", locale: .autoupdatingCurrent) : trimmed
     }
 
     var wordCount: Int {
@@ -319,6 +325,27 @@ extension Memo {
         updatedAt: .now.addingTimeInterval(-2_700),
         isPinned: true
     )
+}
+
+enum ExampleAppStrings {
+    static func localized(_ key: String, locale: Locale) -> String {
+        let languageCode = locale.identifier
+            .replacingOccurrences(of: "_", with: "-")
+            .split(separator: "-")
+            .first
+            .map(String.init)
+
+        if let languageCode,
+           let path = Bundle.main.path(forResource: languageCode, ofType: "lproj"),
+           let bundle = Bundle(path: path) {
+            let value = bundle.localizedString(forKey: key, value: nil, table: nil)
+            if value != key {
+                return value
+            }
+        }
+
+        return Bundle.main.localizedString(forKey: key, value: nil, table: nil)
+    }
 }
 
 #Preview {
