@@ -20,17 +20,16 @@ public struct ScreenshotDeviceScreenView: View {
         let screenCornerRadius: CGFloat = 44
         let outerBorderLineWidth = deviceKind.outerBorderLineWidth
         let innerBorderLineWidth = deviceKind.innerBorderLineWidth
+        let innerFrameThickness = innerBorderLineWidth
+        let outerFrameThickness = outerBorderLineWidth
         let outerFrameInset = innerBorderLineWidth + outerBorderLineWidth / 2
-        let frameCornerRadiusAdjustment: CGFloat = 2
-        let innerFrameCornerRadius = screenCornerRadius + frameCornerRadiusAdjustment
-        let outerFrameCornerRadius = innerFrameCornerRadius + innerBorderLineWidth / 2 + frameCornerRadiusAdjustment
+        let innerFrameCornerRadius = screenCornerRadius + innerFrameThickness / 2
+        let outerFrameCornerRadius = screenCornerRadius + innerFrameThickness + outerFrameThickness / 2
         let screenShape = RoundedRectangle(cornerRadius: screenCornerRadius, style: .continuous)
 
         ZStack {
             screenshotWrappedContent
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                .ignoresSafeArea()
-                
 
             if deviceKind.showsDynamicIsland {
                 VStack {
@@ -49,7 +48,7 @@ public struct ScreenshotDeviceScreenView: View {
                 cornerRadius: outerFrameCornerRadius,
                 style: .continuous
             )
-            .stroke(platformBorderColor, lineWidth: outerBorderLineWidth)
+            .stroke(platformBorderColor, lineWidth: outerFrameThickness)
             .padding(-outerFrameInset)
         )
         .overlay(
@@ -57,8 +56,8 @@ public struct ScreenshotDeviceScreenView: View {
                 cornerRadius: innerFrameCornerRadius,
                 style: .continuous
             )
-            .stroke(.black, lineWidth: innerBorderLineWidth)
-            .padding(-innerBorderLineWidth / 2)
+            .stroke(.black, lineWidth: innerFrameThickness)
+            .padding(-innerFrameThickness / 2)
         )
     }
 
@@ -73,6 +72,7 @@ public struct ScreenshotDeviceScreenView: View {
         case let .image(content):
             ScreenshotContentViewControllerWrapper {
                 content
+                    .ignoresSafeArea(.all)
             }
             
         }
