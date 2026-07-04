@@ -197,7 +197,7 @@ struct PromoScreenshot: ScreenshotItem {
         ScreenshotView(
             title: "各デバイスの見せ方を最適化",
             subtitle: "iPhone と iPad で別の素材を使い分ける",
-            image: .init("PromoPhone", "PromoPad")
+            image: .init(phone: "PromoPhone", pad: "PromoPad")
         )
         .background(Color(red: 0.95, green: 0.95, blue: 0.98))
     }
@@ -224,7 +224,7 @@ struct AlarmScreenshot: ScreenshotItem {
         ScreenshotView(
             title: "拡張 UI もそのまま訴求",
             subtitle: "実画面と素材画像を同じ export フローで混ぜられる",
-            image: .init("AlarmPhone", "AlarmPad")
+            image: .init(phone: "AlarmPhone", pad: "AlarmPad")
         )
         .background(Color(red: 0.95, green: 0.95, blue: 0.98))
     }

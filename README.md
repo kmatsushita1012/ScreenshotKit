@@ -195,7 +195,7 @@ struct PromoScreenshot: ScreenshotItem {
         ScreenshotView(
             title: "Show every device at its best",
             subtitle: "Use separate prepared artwork for iPhone and iPad",
-            image: .init("PromoPhone", "PromoPad")
+            image: .init(phone: "PromoPhone", pad: "PromoPad")
         )
         .background(Color(red: 0.95, green: 0.95, blue: 0.98))
     }
@@ -222,7 +222,7 @@ struct AlarmScreenshot: ScreenshotItem {
         ScreenshotView(
             title: "Promote extension UI directly",
             subtitle: "Mix app screens and prepared assets in one export flow",
-            image: .init("AlarmPhone", "AlarmPad")
+            image: .init(phone: "AlarmPhone", pad: "AlarmPad")
         )
         .background(Color(red: 0.95, green: 0.95, blue: 0.98))
     }
