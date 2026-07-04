@@ -30,6 +30,7 @@ public struct ScreenshotDeviceScreenView: View {
         ZStack {
             screenshotWrappedContent
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                .ignoresSafeArea()
 
             if deviceKind.showsDynamicIsland {
                 VStack {
@@ -74,7 +75,6 @@ public struct ScreenshotDeviceScreenView: View {
                 content
                     .ignoresSafeArea(.all)
             }
-            
         }
 #else
         screenshotContent.contentView
