@@ -15,13 +15,13 @@ public protocol ScreenshotStyle: Sendable {
 
 public enum ScreenshotContent {
     case view(AnyView)
-    case image(assetName: String, bundle: Bundle?)
+    case image(assetName: String, bundle: Bundle?, showsDynamicIsland: Bool)
 
     public var contentView: AnyView {
         switch self {
         case let .view(content):
             content
-        case let .image(assetName, bundle):
+        case let .image(assetName, bundle, _):
             AnyView(
                 Image(assetName, bundle: bundle)
                     .resizable()

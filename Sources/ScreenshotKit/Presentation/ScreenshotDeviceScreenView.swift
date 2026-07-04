@@ -32,7 +32,7 @@ public struct ScreenshotDeviceScreenView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                 .ignoresSafeArea()
 
-            if deviceKind.showsDynamicIsland {
+            if showsDynamicIslandOverlay(for: deviceKind) {
                 VStack {
                     Capsule(style: .continuous)
                         .frame(width: 100, height: 30)
@@ -70,7 +70,7 @@ public struct ScreenshotDeviceScreenView: View {
             ScreenshotContentViewControllerWrapper {
                 content
             }
-        case let .image(assetName, bundle):
+        case let .image(assetName, bundle, _):
             Image(assetName, bundle: bundle)
                 .resizable()
                 .aspectRatio(contentMode: .fill)
@@ -81,6 +81,15 @@ public struct ScreenshotDeviceScreenView: View {
 #else
         screenshotContent.contentView
 #endif
+    }
+
+    private func showsDynamicIslandOverlay(for deviceKind: ScreenshotDeviceKind) -> Bool {
+        switch screenshotContent {
+        case .view:
+            return deviceKind.showsDynamicIsland
+        case let .image(_, _, showsDynamicIsland):
+            return deviceKind.showsDynamicIsland && showsDynamicIsland
+        }
     }
 }
 

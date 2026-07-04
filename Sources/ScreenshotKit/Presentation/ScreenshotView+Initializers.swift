@@ -56,7 +56,8 @@ public extension ScreenshotView where Background == EmptyView, Title == AnyView,
         title: String,
         subtitle: String,
         image: ScreenshotImage,
-        imageBundle: Bundle? = .main
+        imageBundle: Bundle? = .main,
+        showsDynamicIsland: Bool = false
     ) {
         self.init(
             title: {
@@ -76,7 +77,8 @@ public extension ScreenshotView where Background == EmptyView, Title == AnyView,
             screenshotContent: {
                 .image(
                     assetName: image.assetName(for: ScreenshotDeviceKind.current),
-                    bundle: imageBundle
+                    bundle: imageBundle,
+                    showsDynamicIsland: showsDynamicIsland
                 )
             }
         )
@@ -87,7 +89,8 @@ public extension ScreenshotView where Background == EmptyView, Title == AnyView,
         title: String,
         subtitle: String,
         image assetName: String,
-        imageBundle: Bundle? = .main
+        imageBundle: Bundle? = .main,
+        showsDynamicIsland: Bool = false
     ) {
         self.init(
             title: {
@@ -107,7 +110,8 @@ public extension ScreenshotView where Background == EmptyView, Title == AnyView,
             screenshotContent: {
                 .image(
                     assetName: assetName,
-                    bundle: imageBundle
+                    bundle: imageBundle,
+                    showsDynamicIsland: showsDynamicIsland
                 )
             }
         )
@@ -117,7 +121,8 @@ public extension ScreenshotView where Background == EmptyView, Title == AnyView,
 public extension ScreenshotView where Background == EmptyView, Title == EmptyView, Subtitle == EmptyView {
     init(
         image: ScreenshotImage,
-        imageBundle: Bundle? = .main
+        imageBundle: Bundle? = .main,
+        showsDynamicIsland: Bool = false
     ) {
         self.init(
             title: { EmptyView() },
@@ -125,7 +130,8 @@ public extension ScreenshotView where Background == EmptyView, Title == EmptyVie
             screenshotContent: {
                 .image(
                     assetName: image.assetName(for: ScreenshotDeviceKind.current),
-                    bundle: imageBundle
+                    bundle: imageBundle,
+                    showsDynamicIsland: showsDynamicIsland
                 )
             }
         )
@@ -134,7 +140,8 @@ public extension ScreenshotView where Background == EmptyView, Title == EmptyVie
     @available(*, deprecated, message: "Use init(image:imageBundle:) with ScreenshotImage.")
     init(
         image assetName: String,
-        imageBundle: Bundle? = .main
+        imageBundle: Bundle? = .main,
+        showsDynamicIsland: Bool = false
     ) {
         self.init(
             title: { EmptyView() },
@@ -142,7 +149,8 @@ public extension ScreenshotView where Background == EmptyView, Title == EmptyVie
             screenshotContent: {
                 .image(
                     assetName: assetName,
-                    bundle: imageBundle
+                    bundle: imageBundle,
+                    showsDynamicIsland: showsDynamicIsland
                 )
             }
         )
