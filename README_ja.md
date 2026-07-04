@@ -40,7 +40,7 @@ https://github.com/kmatsushita1012/ScreenshotKit.git
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/kmatsushita1012/ScreenshotKit.git", from: "1.0.0")
+    .package(url: "https://github.com/kmatsushita1012/ScreenshotKit.git", from: "1.1.0")
 ]
 ```
 
@@ -83,7 +83,7 @@ struct HomeScreenshot: ScreenshotItem {
 ### 3. アプリのプロジェクトルートで書き出す
 
 ```bash
-./scripts/export_screenshots.sh ./output
+./scripts/export_screenshots.sh --output-dir ./output
 ```
 
 これで `./output` にスクリーンショットを書き出せます。
@@ -136,14 +136,6 @@ Application Support/
 
 その後 export script が最終成果物を指定ディレクトリへコピーし、device ごとに manifest も残します。
 
-### CLI 補足
-
-現在の script のシグネチャは次です。
-
-```bash
-./scripts/export_screenshots.sh [output-dir] [device-id]
-```
-
 ### 注意点
 
 - iOS 専用です
@@ -174,6 +166,52 @@ struct DetailScreenshot: ScreenshotItem {
 }
 ```
 
+### `ScreenshotView`
+
+`ScreenshotView` では、次の 2 種類の scene を扱えます。
+
+- trailing closure で SwiftUI の View を渡す
+- `ScreenshotImage` で iPhone / iPad 用の画像 asset を渡す
+
+```swift
+struct HomeScreenshot: ScreenshotItem {
+    static let id = "home"
+
+    var body: some View {
+        ScreenshotView(
+            title: "すべてを一箇所で確認",
+            subtitle: "進捗・状態・最近の動きをまとめて見せる"
+        ) {
+            HomeContentView(item: .fixture)
+        }
+        .background(Color(red: 0.93, green: 0.96, blue: 1.0))
+    }
+}
+```
+
+```swift
+struct PromoScreenshot: ScreenshotItem {
+    static let id = "promo"
+
+    var body: some View {
+        ScreenshotView(
+            title: "各デバイスの見せ方を最適化",
+            subtitle: "iPhone と iPad で別の素材を使い分ける",
+            image: .init("PromoPhone", "PromoPad")
+        )
+        .background(Color(red: 0.95, green: 0.95, blue: 0.98))
+    }
+}
+```
+
+`ScreenshotImage` は現在の device kind に応じて使う asset 名を選びます。
+
+```swift
+let promo = ScreenshotImage(phone: "PromoPhone", pad: "PromoPad")
+```
+
+画像ベース scene では `imageBundle` と `showsDynamicIsland` も指定できます。
+
 ### 画像ベースの scene
 
 Widget や extension UI のように、通常のアプリ画面として組みにくいものは画像ベースでも扱えます。
@@ -186,12 +224,26 @@ struct AlarmScreenshot: ScreenshotItem {
         ScreenshotView(
             title: "拡張 UI もそのまま訴求",
             subtitle: "実画面と素材画像を同じ export フローで混ぜられる",
-            image: "alarm"
+            image: .init("AlarmPhone", "AlarmPad")
         )
         .background(Color(red: 0.95, green: 0.95, blue: 0.98))
     }
 }
 ```
+
+同じ画像を両デバイスで使う場合は、同じ asset 名を 2 回渡してください。
+
+### Export script
+
+export script は位置引数と named option の両方に対応しています。
+
+```bash
+./scripts/export_screenshots.sh [output-dir] [device-id]
+./scripts/export_screenshots.sh --output-dir ./output --device-id <simulator-udid>
+./scripts/export_screenshots.sh --project path/to/App.xcodeproj
+```
+
+script は利用可能なアプリプロジェクトを見つけ、最新の iOS runtime から代表的な iPhone / iPad Simulator を選び、app bundle に含まれる各 locale ごとに書き出し、device ごとの manifest を出力先へ保存します。
 
 ### ExampleApp
 
