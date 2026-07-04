@@ -40,7 +40,7 @@ Or in `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/kmatsushita1012/ScreenshotKit.git", from: "1.0.0")
+    .package(url: "https://github.com/kmatsushita1012/ScreenshotKit.git", from: "1.1.0")
 ]
 ```
 
@@ -83,7 +83,7 @@ struct HomeScreenshot: ScreenshotItem {
 ### 3. Run the exporter from your app project
 
 ```bash
-./scripts/export_screenshots.sh ./output
+./scripts/export_screenshots.sh --output-dir ./output
 ```
 
 This exports screenshots into `./output`.
@@ -134,14 +134,6 @@ Application Support/
 
 The export script then copies the final outputs into your target directory and keeps one manifest per device.
 
-### CLI notes
-
-The current script signature is:
-
-```bash
-./scripts/export_screenshots.sh [output-dir] [device-id]
-```
-
 ### Limitations
 
 - iOS only
@@ -172,6 +164,52 @@ struct DetailScreenshot: ScreenshotItem {
 }
 ```
 
+### `ScreenshotView`
+
+`ScreenshotView` supports two scene shapes:
+
+- pass a SwiftUI view with a trailing closure
+- pass prepared image assets with `ScreenshotImage`
+
+```swift
+struct HomeScreenshot: ScreenshotItem {
+    static let id = "home"
+
+    var body: some View {
+        ScreenshotView(
+            title: "Everything in one place",
+            subtitle: "Review progress, status, and recent activity at a glance"
+        ) {
+            HomeContentView(item: .fixture)
+        }
+        .background(Color(red: 0.93, green: 0.96, blue: 1.0))
+    }
+}
+```
+
+```swift
+struct PromoScreenshot: ScreenshotItem {
+    static let id = "promo"
+
+    var body: some View {
+        ScreenshotView(
+            title: "Show every device at its best",
+            subtitle: "Use separate prepared artwork for iPhone and iPad",
+            image: .init("PromoPhone", "PromoPad")
+        )
+        .background(Color(red: 0.95, green: 0.95, blue: 0.98))
+    }
+}
+```
+
+`ScreenshotImage` selects the asset that matches the current device kind:
+
+```swift
+let promo = ScreenshotImage(phone: "PromoPhone", pad: "PromoPad")
+```
+
+Image-based scenes also accept `imageBundle` and `showsDynamicIsland`.
+
 ### Using image-based scenes
 
 For surfaces that are hard to reconstruct as a regular app screen, such as widgets or extension UIs, you can use image-based scenes.
@@ -184,12 +222,26 @@ struct AlarmScreenshot: ScreenshotItem {
         ScreenshotView(
             title: "Promote extension UI directly",
             subtitle: "Mix app screens and prepared assets in one export flow",
-            image: "alarm"
+            image: .init("AlarmPhone", "AlarmPad")
         )
         .background(Color(red: 0.95, green: 0.95, blue: 0.98))
     }
 }
 ```
+
+If the same asset is valid for both device kinds, pass the same name twice.
+
+### Export script
+
+The export script supports positional arguments and named options:
+
+```bash
+./scripts/export_screenshots.sh [output-dir] [device-id]
+./scripts/export_screenshots.sh --output-dir ./output --device-id <simulator-udid>
+./scripts/export_screenshots.sh --project path/to/App.xcodeproj
+```
+
+The script discovers a usable app project, picks flagship iPhone and iPad simulators from the latest available iOS runtime, launches each locale declared by the app bundle, and writes one manifest per device into the output directory.
 
 ### Example app
 
