@@ -15,6 +15,9 @@ public struct HeroScreenshotStyle: ScreenshotStyle {
     public func makeBody(configuration: ScreenshotStyleConfiguration) -> some View {
         GeometryReader { proxy in
             let deviceKind = ScreenshotDeviceKind.current
+            let screenHeight = ScreenshotPreviewLayoutMetrics.currentScreenHeight(
+                fallbackHeight: proxy.size.height
+            )
             let previewVerticalCompensation = ScreenshotPreviewLayoutMetrics.verticalCompensation(
                 isRunningForPreview: ScreenshotPreviewLayoutMetrics.isRunningForPreview(),
                 deviceKind: deviceKind,
@@ -38,8 +41,10 @@ public struct HeroScreenshotStyle: ScreenshotStyle {
                 .offset(
                     x: 0,
                     y: ScreenshotPreviewLayoutMetrics.titleSubtitleVerticalOffset(
-                        for: deviceKind
-                    ) + 46
+                        for: deviceKind,
+                        screenHeight: screenHeight,
+                        topSafeAreaInset: proxy.safeAreaInsets.top
+                    )
                 )
             }
             .offset(x: 0, y: previewVerticalCompensation)
@@ -71,20 +76,27 @@ extension DefaultScreenshotStyle: ResolvedScreenshotStyleIdentifying {
 
 enum ScreenshotPreviewLayoutMetrics {
     static let previewEnvironmentKey = "XCODE_RUNNING_FOR_PREVIEW"
-    static let referencePhoneStatusBarHeight: CGFloat = 46
-    static let referencePhoneScreenHeight: CGFloat = 956
-    static let referencePadScreenHeight: CGFloat = 1376
+    static let titleTopOffsetRatio: CGFloat = 46 / 956
 
     static func isRunningForPreview(processInfo: ProcessInfo = .processInfo) -> Bool {
         processInfo.environment[previewEnvironmentKey] == "1"
     }
 
-    static func titleSubtitleVerticalOffset(for deviceKind: ScreenshotDeviceKind) -> CGFloat {
-        switch deviceKind {
+    static func titleSubtitleVerticalOffset(
+        for deviceKind: ScreenshotDeviceKind,
+        screenHeight: CGFloat,
+        topSafeAreaInset: CGFloat
+    ) -> CGFloat {
+        let baseTopOffset = max(
+            topSafeAreaInset,
+            screenHeight * titleTopOffsetRatio
+        )
+
+        return switch deviceKind {
         case .phone:
-            0
+            baseTopOffset
         case .pad:
-            referencePhoneStatusBarHeight * (currentScreenHeight(for: deviceKind) / referencePhoneScreenHeight)
+            baseTopOffset + screenHeight * titleTopOffsetRatio
         }
     }
 
@@ -97,17 +109,11 @@ enum ScreenshotPreviewLayoutMetrics {
         return +topSafeAreaInset
     }
 
-    static func currentScreenHeight(for deviceKind: ScreenshotDeviceKind) -> CGFloat {
+    static func currentScreenHeight(fallbackHeight: CGFloat) -> CGFloat {
 #if canImport(UIKit)
-        if ScreenshotDeviceKind.current == deviceKind {
-            return UIScreen.main.bounds.height
-        }
+        return UIScreen.main.bounds.height
+#else
+        return fallbackHeight
 #endif
-        return switch deviceKind {
-        case .phone:
-            referencePhoneScreenHeight
-        case .pad:
-            referencePadScreenHeight
-        }
     }
 }
