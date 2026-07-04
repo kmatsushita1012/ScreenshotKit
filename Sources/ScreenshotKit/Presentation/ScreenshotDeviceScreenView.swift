@@ -74,8 +74,8 @@ public struct ScreenshotDeviceScreenView: View {
             ScreenshotContentViewControllerWrapper {
                 Image(assetName, bundle: bundle)
                     .resizable()
-                    .scaledToFit()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .aspectRatio(contentMode: .fill)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                     .clipped()
                     .ignoresSafeArea(.all)
             }
