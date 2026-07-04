@@ -8,13 +8,11 @@ import SwiftUI
 import UIKit
 #endif
 
-public struct ScreenshotDeviceScreenView<Content: View>: View {
-    private let contentBuilder: () -> Content
+public struct ScreenshotDeviceScreenView: View {
+    private let screenshotContent: ScreenshotContent
 
-    public init(
-        @ViewBuilder content: @escaping () -> Content
-    ) {
-        self.contentBuilder = content
+    init(screenshotContent: ScreenshotContent) {
+        self.screenshotContent = screenshotContent
     }
 
     public var body: some View {
@@ -31,6 +29,8 @@ public struct ScreenshotDeviceScreenView<Content: View>: View {
         ZStack {
             screenshotWrappedContent
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                .ignoresSafeArea()
+                
 
             if deviceKind.showsDynamicIsland {
                 VStack {
@@ -65,12 +65,19 @@ public struct ScreenshotDeviceScreenView<Content: View>: View {
     @ViewBuilder
     private var screenshotWrappedContent: some View {
 #if canImport(UIKit)
-        ScreenshotContentViewControllerWrapper(
-            content: contentBuilder
-        )
-        .ignoresSafeArea(.all)
+        switch screenshotContent {
+        case let .view(content):
+            ScreenshotContentViewControllerWrapper {
+                content
+            }
+        case let .image(content):
+            ScreenshotContentViewControllerWrapper {
+                content
+            }
+            
+        }
 #else
-        contentBuilder()
+        screenshotContent.contentView
 #endif
     }
 }

@@ -18,9 +18,9 @@ public struct HeroScreenshotStyle: ScreenshotStyle {
                 topSafeAreaInset: proxy.safeAreaInsets.top
             )
 
-            ScreenshotDeviceScreenView {
-                configuration.content
-            }
+            ScreenshotDeviceScreenView(
+                screenshotContent: configuration.screenshotContent
+            )
             .frame(width: proxy.size.width, height: proxy.size.height)
             .scaleEffect(0.7)
             .offset(x: 0, y: proxy.size.height * 0.1)
@@ -42,6 +42,7 @@ public struct HeroScreenshotStyle: ScreenshotStyle {
             .offset(x: 0, y: previewVerticalCompensation)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        
     }
 }
 

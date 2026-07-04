@@ -54,7 +54,34 @@ struct MemoEditScreenshot: ScreenshotItem {
     }
 }
 
-
 #Preview {
     MemoEditScreenshot()
+}
+
+struct MemoPreviewScreenshot: ScreenshotItem {
+    static let id = "memo-preview"
+
+    var body: some View {
+        ScreenshotView(
+            title: "Show every device at its best",
+            subtitle: "Reuse one screenshot item while tailoring prepared artwork for iPhone and iPad",
+            image: .init(phone: "MemoPreviewPhone", pad: "MemoPreviewPad")
+        )
+        .background(
+            LinearGradient(
+                colors: [
+                    Color(red: 0.81, green: 0.93, blue: 0.97),
+                    Color(red: 0.02, green: 0.78, blue: 0.76),
+                    Color(red: 0.05, green: 0.25, blue: 0.64)
+                ],
+                startPoint: .bottomLeading,
+                endPoint: .topTrailing
+            )
+        )
+    }
+}
+
+
+#Preview {
+    MemoPreviewScreenshot()
 }

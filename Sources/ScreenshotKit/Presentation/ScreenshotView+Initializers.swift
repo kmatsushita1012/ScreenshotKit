@@ -6,7 +6,7 @@
 import SwiftUI
 
 public extension ScreenshotView where Background == EmptyView, Title == AnyView, Subtitle == AnyView {
-    init(
+    init<Content: View>(
         title: String,
         subtitle: String,
         @ViewBuilder content: @escaping () -> Content
@@ -51,7 +51,46 @@ private enum ScreenshotDefaultTextStyle {
     }
 }
 
-public extension ScreenshotView where Background == EmptyView, Content == AnyView, Title == AnyView, Subtitle == AnyView {
+public extension ScreenshotView where Background == EmptyView, Title == AnyView, Subtitle == AnyView {
+    init(
+        title: String,
+        subtitle: String,
+        image: ScreenshotImage,
+        imageBundle: Bundle? = .main
+    ) {
+        self.init(
+            title: {
+                AnyView(
+                    Text(title)
+                        .font(ScreenshotDefaultTextStyle.titleFont)
+                        .fontWeight(.bold)
+                )
+            },
+            subtitle: {
+                AnyView(
+                    Text(subtitle)
+                        .font(ScreenshotDefaultTextStyle.subtitleFont)
+                        .foregroundStyle(.secondary)
+                )
+            },
+            screenshotContent: {
+                .image(
+                    AnyView(
+                        Image(
+                            image.assetName(for: ScreenshotDeviceKind.current),
+                            bundle: imageBundle
+                        )
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .clipped()
+                    )
+                )
+            }
+        )
+    }
+
+    @available(*, deprecated, message: "Use init(title:subtitle:image:imageBundle:) with ScreenshotImage.")
     init(
         title: String,
         subtitle: String,
@@ -59,22 +98,61 @@ public extension ScreenshotView where Background == EmptyView, Content == AnyVie
         imageBundle: Bundle? = .main
     ) {
         self.init(
-            title: title,
-            subtitle: subtitle,
-            content: {
+            title: {
                 AnyView(
-                    Image(assetName, bundle: imageBundle)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .clipped()
+                    Text(title)
+                        .font(ScreenshotDefaultTextStyle.titleFont)
+                        .fontWeight(.bold)
+                )
+            },
+            subtitle: {
+                AnyView(
+                    Text(subtitle)
+                        .font(ScreenshotDefaultTextStyle.subtitleFont)
+                        .foregroundStyle(.secondary)
+                )
+            },
+            screenshotContent: {
+                .image(
+                    AnyView(
+                        Image(assetName, bundle: imageBundle)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .clipped()
+                    )
                 )
             }
         )
     }
 }
 
-public extension ScreenshotView where Background == EmptyView, Content == AnyView, Title == EmptyView, Subtitle == EmptyView {
+public extension ScreenshotView where Background == EmptyView, Title == EmptyView, Subtitle == EmptyView {
+    init(
+        image: ScreenshotImage,
+        imageBundle: Bundle? = .main
+    ) {
+        self.init(
+            title: { EmptyView() },
+            subtitle: { EmptyView() },
+            screenshotContent: {
+                .image(
+                    AnyView(
+                        Image(
+                            image.assetName(for: ScreenshotDeviceKind.current),
+                            bundle: imageBundle
+                        )
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .clipped()
+                    )
+                )
+            }
+        )
+    }
+
+    @available(*, deprecated, message: "Use init(image:imageBundle:) with ScreenshotImage.")
     init(
         image assetName: String,
         imageBundle: Bundle? = .main
@@ -82,13 +160,15 @@ public extension ScreenshotView where Background == EmptyView, Content == AnyVie
         self.init(
             title: { EmptyView() },
             subtitle: { EmptyView() },
-            content: {
-                AnyView(
-                    Image(assetName, bundle: imageBundle)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .clipped()
+            screenshotContent: {
+                .image(
+                    AnyView(
+                        Image(assetName, bundle: imageBundle)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .clipped()
+                    )
                 )
             }
         )
