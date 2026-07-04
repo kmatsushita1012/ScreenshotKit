@@ -71,14 +71,12 @@ public struct ScreenshotDeviceScreenView: View {
                 content
             }
         case let .image(assetName, bundle):
-            ScreenshotContentViewControllerWrapper {
-                Image(assetName, bundle: bundle)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                    .clipped()
-                    .ignoresSafeArea(.all)
-            }
+            Image(assetName, bundle: bundle)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                .clipped()
+                .ignoresSafeArea(.all)
         }
 #else
         screenshotContent.contentView
