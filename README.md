@@ -202,13 +202,7 @@ struct PromoScreenshot: ScreenshotItem {
 }
 ```
 
-`ScreenshotImage` selects the asset that matches the current device kind:
-
-```swift
-let promo = ScreenshotImage(phone: "PromoPhone", pad: "PromoPad")
-```
-
-Image-based scenes also accept `imageBundle` and `showsDynamicIsland`.
+`ScreenshotImage` selects the asset that matches the current device kind.
 
 ### Using image-based scenes
 

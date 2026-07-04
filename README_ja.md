@@ -206,12 +206,6 @@ struct PromoScreenshot: ScreenshotItem {
 
 `ScreenshotImage` は現在の device kind に応じて使う asset 名を選びます。
 
-```swift
-let promo = ScreenshotImage(phone: "PromoPhone", pad: "PromoPad")
-```
-
-画像ベース scene では `imageBundle` と `showsDynamicIsland` も指定できます。
-
 ### 画像ベースの scene
 
 Widget や extension UI のように、通常のアプリ画面として組みにくいものは画像ベースでも扱えます。
