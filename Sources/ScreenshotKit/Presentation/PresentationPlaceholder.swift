@@ -334,7 +334,6 @@ struct ScreenshotHostView: View {
         } else if let currentJob, let view = registry.makeView(currentJob.sceneID) {
             LiveRenderedScreenshotScene(
                 taskID: currentJob.id,
-                localeIdentifier: currentJob.localeIdentifier,
                 content: view,
                 onSceneReady: onSceneReady
             )
@@ -356,7 +355,6 @@ struct ScreenshotSceneReadiness {
 
 private struct LiveRenderedScreenshotScene: UIViewControllerRepresentable {
     let taskID: String
-    let localeIdentifier: String
     let content: AnyView
     let onSceneReady: (ScreenshotSceneReadiness) -> Void
 
@@ -385,7 +383,7 @@ private struct LiveRenderedScreenshotScene: UIViewControllerRepresentable {
     private func makeRootView(for coordinator: Coordinator) -> CaptureMetadataReportingRoot {
         CaptureMetadataReportingRoot(
             content: AnyView(
-                content.environment(\.locale, Locale(identifier: localeIdentifier))
+                content
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .statusBarHidden(true)
             ),

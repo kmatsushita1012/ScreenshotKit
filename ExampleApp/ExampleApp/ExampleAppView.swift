@@ -21,9 +21,9 @@ struct ExampleAppView: View {
                 MemoEditView(memo: $memos[selectedMemoIndex])
             } else {
                 ContentUnavailableView(
-                    "Select a Memo",
+                    "empty.selectMemo.title",
                     systemImage: "note.text",
-                    description: Text("Choose a memo from the list to edit its title and body.")
+                    description: Text("empty.selectMemo.description")
                 )
             }
         }
@@ -32,9 +32,9 @@ struct ExampleAppView: View {
 
     private func addMemo() {
         let newMemo = Memo(
-            title: "New Memo",
+            title: String(localized: "memo.new.title"),
             body: "",
-            category: "Inbox",
+            category: String(localized: "memo.new.category"),
             updatedAt: .now,
             isPinned: false
         )
@@ -85,12 +85,12 @@ struct MemoListView: View {
             }
         }
         .listStyle(.insetGrouped)
-        .navigationTitle("Memos")
+        .navigationTitle(Text("memo.list.navigationTitle"))
         .toolbar {
             if let onCreateMemo {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(action: onCreateMemo) {
-                        Label("New Memo", systemImage: "square.and.pencil")
+                        Label("memo.new.button", systemImage: "square.and.pencil")
                     }
                 }
             }
@@ -100,7 +100,7 @@ struct MemoListView: View {
     @ViewBuilder
     private var memoSections: some View {
         if !pinnedMemos.isEmpty {
-            Section("Pinned") {
+            Section("memo.section.pinned") {
                 ForEach(pinnedMemos) { memo in
                     MemoRow(memo: memo)
                         .tag(memo.id)
@@ -108,7 +108,7 @@ struct MemoListView: View {
             }
         }
 
-        Section("All Notes") {
+        Section("memo.section.allNotes") {
             ForEach(otherMemos) { memo in
                 MemoRow(memo: memo)
                     .tag(memo.id)
@@ -118,6 +118,7 @@ struct MemoListView: View {
 }
 
 struct MemoEditView: View {
+    @Environment(\.locale) private var locale
     private let memoBinding: Binding<Memo>?
     @State private var localMemo: Memo
 
@@ -137,24 +138,29 @@ struct MemoEditView: View {
 
     var body: some View {
         Form {
-            Section("Details") {
-                TextField("Title", text: draft.title)
+            Section("memo.edit.section.details") {
+                TextField("memo.edit.field.title", text: draft.title)
                     .font(.title2.weight(.semibold))
-                TextField("Category", text: draft.category)
-                Toggle("Pinned", isOn: draft.isPinned)
+                TextField("memo.edit.field.category", text: draft.category)
+                Toggle("memo.edit.field.pinned", isOn: draft.isPinned)
             }
 
-            Section("Content") {
+            Section("memo.edit.section.content") {
                 TextEditor(text: draft.body)
                     .frame(minHeight: 260)
             }
 
-            Section("Status") {
-                LabeledContent("Last Edited") {
-                    Text(draft.wrappedValue.updatedAt.formatted(date: .abbreviated, time: .shortened))
+            Section("memo.edit.section.status") {
+                LabeledContent("memo.edit.status.lastEdited") {
+                    Text(
+                        draft.wrappedValue.updatedAt.formatted(
+                            Date.FormatStyle(date: .abbreviated, time: .shortened)
+                                .locale(locale)
+                        )
+                    )
                         .foregroundStyle(.secondary)
                 }
-                LabeledContent("Words") {
+                LabeledContent("memo.edit.status.words") {
                     Text("\(draft.wrappedValue.wordCount)")
                         .foregroundStyle(.secondary)
                 }
@@ -162,11 +168,11 @@ struct MemoEditView: View {
         }
         .scrollContentBackground(.hidden)
         .background(Color(.systemGroupedBackground))
-        .navigationTitle(draft.wrappedValue.title.isEmpty ? "Untitled" : draft.wrappedValue.title)
+        .navigationTitle(draft.wrappedValue.title.isEmpty ? Text("memo.edit.untitled") : Text(verbatim: draft.wrappedValue.title))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button("Done") {}
+                Button("memo.edit.done") {}
                     .fontWeight(.semibold)
             }
         }
@@ -248,7 +254,7 @@ struct Memo: Identifiable, Hashable {
 
     var bodyPreview: String {
         let trimmed = body.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? "No additional text yet." : trimmed
+        return trimmed.isEmpty ? String(localized: "memo.preview.empty") : trimmed
     }
 
     var wordCount: Int {
@@ -259,30 +265,30 @@ struct Memo: Identifiable, Hashable {
 extension Memo {
     static let sampleNotebook: [Memo] = [
         Memo(
-            title: "Release checklist",
-            body: "Polish the onboarding copy.\nVerify screenshot export on iPhone and iPad.\nSend the build to stakeholders before noon.",
-            category: "Work",
+            title: String(localized: "memo.sample.releaseChecklist.title"),
+            body: String(localized: "memo.sample.releaseChecklist.body"),
+            category: String(localized: "memo.sample.releaseChecklist.category"),
             updatedAt: .now.addingTimeInterval(-2_700),
             isPinned: true
         ),
         Memo(
-            title: "Weekend groceries",
-            body: "Coffee beans, lemons, yogurt, spinach, sparkling water, and pasta for dinner.",
-            category: "Home",
+            title: String(localized: "memo.sample.weekendGroceries.title"),
+            body: String(localized: "memo.sample.weekendGroceries.body"),
+            category: String(localized: "memo.sample.weekendGroceries.category"),
             updatedAt: .now.addingTimeInterval(-18_000),
             isPinned: true
         ),
         Memo(
-            title: "Design notes",
-            body: "Keep the memo list quiet and readable. Editing should feel direct, with the title and body visible at once.",
-            category: "Ideas",
+            title: String(localized: "memo.sample.designNotes.title"),
+            body: String(localized: "memo.sample.designNotes.body"),
+            category: String(localized: "memo.sample.designNotes.category"),
             updatedAt: .now.addingTimeInterval(-82_000),
             isPinned: false
         ),
         Memo(
-            title: "Travel plan",
-            body: "Book the early train, save the hotel address offline, and double-check the museum reservation number.",
-            category: "Personal",
+            title: String(localized: "memo.sample.travelPlan.title"),
+            body: String(localized: "memo.sample.travelPlan.body"),
+            category: String(localized: "memo.sample.travelPlan.category"),
             updatedAt: .now.addingTimeInterval(-172_000),
             isPinned: false
         )
@@ -290,32 +296,32 @@ extension Memo {
 
     static let screenshotList: [Memo] = [
         Memo(
-            title: "Release checklist",
-            body: "Polish the onboarding copy.\nVerify screenshot export on iPhone and iPad.\nSend the build to stakeholders before noon.",
-            category: "Work",
+            title: String(localized: "memo.sample.releaseChecklist.title"),
+            body: String(localized: "memo.sample.releaseChecklist.body"),
+            category: String(localized: "memo.sample.releaseChecklist.category"),
             updatedAt: .now.addingTimeInterval(-2_700),
             isPinned: true
         ),
         Memo(
-            title: "Design notes",
-            body: "Keep the memo list quiet and readable. Editing should feel direct, with the title and body visible at once.",
-            category: "Ideas",
+            title: String(localized: "memo.sample.designNotes.title"),
+            body: String(localized: "memo.sample.designNotes.body"),
+            category: String(localized: "memo.sample.designNotes.category"),
             updatedAt: .now.addingTimeInterval(-82_000),
             isPinned: false
         ),
         Memo(
-            title: "Travel plan",
-            body: "Book the early train, save the hotel address offline, and double-check the museum reservation number.",
-            category: "Personal",
+            title: String(localized: "memo.sample.travelPlan.title"),
+            body: String(localized: "memo.sample.travelPlan.body"),
+            category: String(localized: "memo.sample.travelPlan.category"),
             updatedAt: .now.addingTimeInterval(-172_000),
             isPinned: false
         )
     ]
 
     static let screenshotDraft = Memo(
-        title: "Release checklist",
-        body: "Polish the onboarding copy.\nVerify screenshot export on iPhone and iPad.\nSend the build to stakeholders before noon.",
-        category: "Work",
+        title: String(localized: "memo.sample.releaseChecklist.title"),
+        body: String(localized: "memo.sample.releaseChecklist.body"),
+        category: String(localized: "memo.sample.releaseChecklist.category"),
         updatedAt: .now.addingTimeInterval(-2_700),
         isPinned: true
     )

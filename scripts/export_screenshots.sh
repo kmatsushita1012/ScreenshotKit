@@ -2,16 +2,69 @@
 
 set -euo pipefail
 
-if [ "$#" -gt 2 ]; then
-  echo "usage: $0 [output-dir] [device-id]" >&2
+OUTPUT_ROOT="./output"
+DEVICE_ID_OVERRIDE=""
+PROJECT_PATH_OVERRIDE=""
+POSITIONAL_ARGS=()
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --output-dir)
+      if [ "$#" -lt 2 ]; then
+        echo "missing value for --output-dir" >&2
+        exit 1
+      fi
+      OUTPUT_ROOT="$2"
+      shift 2
+      ;;
+    --device-id)
+      if [ "$#" -lt 2 ]; then
+        echo "missing value for --device-id" >&2
+        exit 1
+      fi
+      DEVICE_ID_OVERRIDE="$2"
+      shift 2
+      ;;
+    --project|--xcodeproj)
+      if [ "$#" -lt 2 ]; then
+        echo "missing value for $1" >&2
+        exit 1
+      fi
+      PROJECT_PATH_OVERRIDE="$2"
+      shift 2
+      ;;
+    --help|-h)
+      echo "usage: $0 [output-dir] [device-id] [--project path/to/App.xcodeproj]" >&2
+      echo "       $0 [--output-dir dir] [--device-id udid] [--project path/to/App.xcodeproj]" >&2
+      exit 0
+      ;;
+    --*)
+      echo "unknown option: $1" >&2
+      exit 1
+      ;;
+    *)
+      POSITIONAL_ARGS+=("$1")
+      shift
+      ;;
+  esac
+done
+
+if [ "${#POSITIONAL_ARGS[@]}" -gt 2 ]; then
+  echo "usage: $0 [output-dir] [device-id] [--project path/to/App.xcodeproj]" >&2
   exit 1
 fi
 
-OUTPUT_ROOT="${1:-./output}"
-DEVICE_ID_OVERRIDE="${2:-}"
+if [ "${#POSITIONAL_ARGS[@]}" -ge 1 ]; then
+  OUTPUT_ROOT="${POSITIONAL_ARGS[0]}"
+fi
+
+if [ "${#POSITIONAL_ARGS[@]}" -ge 2 ]; then
+  DEVICE_ID_OVERRIDE="${POSITIONAL_ARGS[1]}"
+fi
 READINESS_TIMEOUT_SECONDS=15
 READINESS_FALLBACK_DELAY_SECONDS=1
 POST_READINESS_SETTLE_SECONDS=1
+PRE_CAPTURE_WARMUP_SETTLE_SECONDS=2
 
 require_command() {
   if ! command -v "$1" >/dev/null 2>&1; then
@@ -46,16 +99,100 @@ sanitize_component() {
 }
 
 infer_project_settings() {
-  python3 - "$PWD" <<'PY'
+  python3 - "$PWD" "$PROJECT_PATH_OVERRIDE" <<'PY'
 import json
 import os
 import subprocess
 import sys
 
 root = sys.argv[1]
+project_override = sys.argv[2]
 
 def run(cmd):
     return subprocess.check_output(cmd, cwd=root, text=True)
+
+def normalized_project(path):
+    expanded = os.path.expanduser(path)
+    if not os.path.isabs(expanded):
+        expanded = os.path.abspath(os.path.join(root, expanded))
+    return os.path.normpath(expanded)
+
+def project_candidate(path):
+    project_json = json.loads(run(["xcodebuild", "-list", "-json", "-project", path]))
+    schemes = project_json.get("project", {}).get("schemes", [])
+    scheme = next((s for s in schemes if not s.endswith(("Tests", "UITests"))), schemes[0] if schemes else None)
+    if not scheme:
+        return None
+
+    build_settings_json = json.loads(run([
+        "xcodebuild",
+        "-showBuildSettings",
+        "-json",
+        "-project", path,
+        "-scheme", scheme,
+    ]))
+
+    target_settings = None
+    has_app_target = False
+    for entry in build_settings_json:
+        settings = entry.get("buildSettings", {})
+        product_type = settings.get("PRODUCT_TYPE")
+        wrapper_extension = settings.get("WRAPPER_EXTENSION")
+        if product_type == "com.apple.product-type.application" or wrapper_extension == "app":
+            target_settings = settings
+            has_app_target = True
+            break
+
+    if target_settings is None and build_settings_json:
+        target_settings = build_settings_json[0].get("buildSettings", {})
+
+    if target_settings is None:
+        return None
+
+    bundle_id = target_settings.get("PRODUCT_BUNDLE_IDENTIFIER")
+    if not bundle_id:
+        return None
+
+    rel_path = os.path.relpath(path, root)
+    rel_parts = rel_path.split(os.sep)
+    project_name = os.path.splitext(os.path.basename(path))[0]
+    parent_name = os.path.basename(os.path.dirname(path))
+    direct_child_project = len(rel_parts) == 2
+    parent_matches_project = parent_name == project_name
+
+    return {
+        "project": path,
+        "scheme": scheme,
+        "bundle_id": bundle_id,
+        "full_product_name": target_settings.get("FULL_PRODUCT_NAME", f"{scheme}.app"),
+        "executable_name": target_settings.get("EXECUTABLE_NAME", scheme),
+        "has_app_target": has_app_target,
+        "score": (
+            1 if direct_child_project else 0,
+            1 if parent_matches_project else 0,
+            1 if has_app_target else 0,
+            -len(rel_parts),
+            rel_path,
+        ),
+    }
+
+if project_override:
+    project = normalized_project(project_override)
+    if not os.path.isdir(project) or not project.endswith(".xcodeproj"):
+        raise SystemExit(f"Specified project not found or not an .xcodeproj: {project_override}")
+
+    candidate = project_candidate(project)
+    if candidate is None:
+        raise SystemExit(f"Could not infer usable app settings from project: {project}")
+
+    print(json.dumps({
+        "project": candidate["project"],
+        "scheme": candidate["scheme"],
+        "bundle_id": candidate["bundle_id"],
+        "full_product_name": candidate["full_product_name"],
+        "executable_name": candidate["executable_name"],
+    }))
+    raise SystemExit(0)
 
 projects = []
 for base, dirs, files in os.walk(root):
@@ -70,43 +207,23 @@ projects.sort()
 if not projects:
     raise SystemExit("No .xcodeproj found under current directory")
 
-project = projects[0]
-project_json = json.loads(run(["xcodebuild", "-list", "-json", "-project", project]))
-schemes = project_json.get("project", {}).get("schemes", [])
-scheme = next((s for s in schemes if not s.endswith(("Tests", "UITests"))), schemes[0] if schemes else None)
-if not scheme:
-    raise SystemExit("No usable scheme found")
+project_candidates = []
+for project in projects:
+    candidate = project_candidate(project)
+    if candidate is not None:
+        project_candidates.append(candidate)
 
-build_settings_json = json.loads(run([
-    "xcodebuild",
-    "-showBuildSettings",
-    "-json",
-    "-project", project,
-    "-scheme", scheme,
-]))
+if not project_candidates:
+    raise SystemExit("No usable app .xcodeproj found under current directory")
 
-target_settings = None
-for entry in build_settings_json:
-    settings = entry.get("buildSettings", {})
-    product_type = settings.get("PRODUCT_TYPE")
-    wrapper_extension = settings.get("WRAPPER_EXTENSION")
-    if product_type == "com.apple.product-type.application" or wrapper_extension == "app":
-        target_settings = settings
-        break
-
-if target_settings is None and build_settings_json:
-    target_settings = build_settings_json[0].get("buildSettings", {})
-
-bundle_id = target_settings.get("PRODUCT_BUNDLE_IDENTIFIER")
-if not bundle_id:
-    raise SystemExit("PRODUCT_BUNDLE_IDENTIFIER not found")
+selected = max(project_candidates, key=lambda item: item["score"])
 
 print(json.dumps({
-    "project": project,
-    "scheme": scheme,
-    "bundle_id": bundle_id,
-    "full_product_name": target_settings.get("FULL_PRODUCT_NAME", f"{scheme}.app"),
-    "executable_name": target_settings.get("EXECUTABLE_NAME", scheme),
+    "project": selected["project"],
+    "scheme": selected["scheme"],
+    "bundle_id": selected["bundle_id"],
+    "full_product_name": selected["full_product_name"],
+    "executable_name": selected["executable_name"],
 }))
 PY
 }
@@ -117,38 +234,66 @@ import json
 import re
 import subprocess
 
-runtimes = json.loads(subprocess.check_output(["xcrun", "simctl", "list", "runtimes", "--json"], text=True))
-devices = json.loads(subprocess.check_output(["xcrun", "simctl", "list", "devices", "--json"], text=True))
-device_types = json.loads(subprocess.check_output(["xcrun", "simctl", "list", "devicetypes", "--json"], text=True))
+runtimes = json.loads(subprocess.check_output(["xcrun", "simctl", "list", "--json", "runtimes", "available"], text=True))
+devices = json.loads(subprocess.check_output(["xcrun", "simctl", "list", "--json", "devices", "available"], text=True))
+device_types = json.loads(subprocess.check_output(["xcrun", "simctl", "list", "--json", "devicetypes"], text=True))
 
 available_runtimes = [
-    runtime for runtime in runtimes.get("runtimes", [])
-    if runtime.get("isAvailable") and runtime.get("identifier", "").startswith("com.apple.CoreSimulator.SimRuntime.iOS-")
+    runtime
+    for runtime in runtimes.get("runtimes", [])
+    if runtime.get("isAvailable") and runtime.get("platform") == "iOS"
 ]
 if not available_runtimes:
     raise SystemExit("No available iOS runtimes")
 
-def version_key(runtime):
-    version = runtime.get("version") or runtime.get("identifier", "").split("iOS-")[-1].replace("-", ".")
+def numeric_version_key(version_string):
     parts = []
-    for token in version.replace("-", ".").split("."):
+    for token in (version_string or "").replace("-", ".").split("."):
+        if not token:
+            continue
         try:
             parts.append(int(token))
         except ValueError:
             parts.append(0)
     return tuple(parts)
 
-runtime = max(available_runtimes, key=version_key)
+runtime = max(
+    available_runtimes,
+    key=lambda item: numeric_version_key(item.get("version") or item.get("identifier", "").split("iOS-")[-1]),
+)
 runtime_id = runtime["identifier"]
 
-type_map = {item["name"]: item["identifier"] for item in device_types.get("devicetypes", [])}
-devices_for_runtime = devices.get("devices", {}).get(runtime_id, [])
-
-available_names = {
-    device["name"]
-    for device in devices_for_runtime
+devices_for_runtime = [
+    device
+    for device in devices.get("devices", {}).get(runtime_id, [])
     if device.get("isAvailable", True)
+]
+if not devices_for_runtime:
+    raise SystemExit(f"No available devices found for runtime {runtime_id}")
+
+device_type_by_name = {
+    item.get("name"): item
+    for item in device_types.get("devicetypes", [])
+    if item.get("name")
 }
+
+def type_identifier_for(name):
+    device_type = device_type_by_name.get(name)
+    if not device_type:
+        raise SystemExit(f"Device type not found for {name}")
+    identifier = device_type.get("identifier")
+    if not identifier:
+        raise SystemExit(f"Device type identifier missing for {name}")
+    return identifier
+
+def type_identifier_for_device(device):
+    identifier = device.get("deviceTypeIdentifier")
+    if identifier:
+        return identifier
+    name = device.get("name")
+    if not name:
+        raise SystemExit("Device name missing")
+    return type_identifier_for(name)
 
 def iphone_score(name):
     if not name.startswith("iPhone "):
@@ -157,23 +302,33 @@ def iphone_score(name):
     generation_match = re.search(r"iPhone (\d+)", name)
     generation = int(generation_match.group(1)) if generation_match else 0
 
-    tier = 0
+    flagship_tier = 0
     if "Pro Max" in name:
-        tier = 5
+        flagship_tier = 4
     elif "Pro" in name:
-        tier = 4
+        flagship_tier = 3
     elif "Plus" in name:
-        tier = 3
-    elif "Air" in name:
-        tier = 2
-    elif "e" in name:
-        tier = 1
+        flagship_tier = 2
+    elif re.search(r"\be\b", name):
+        flagship_tier = 0
+    else:
+        flagship_tier = 1
 
-    return (generation, tier, name)
+    return (flagship_tier, generation, name)
 
 def ipad_score(name):
-    if not name.startswith("iPad "):
+    if not name.startswith("iPad"):
         return None
+
+    family_score = 0
+    if "iPad Pro" in name:
+        family_score = 4
+    elif "iPad Air" in name:
+        family_score = 3
+    elif "iPad" == name or name.startswith("iPad ("):
+        family_score = 2
+    elif "iPad mini" in name:
+        family_score = 1
 
     chip_match = re.search(r"\(M(\d+)\)", name)
     chip_generation = int(chip_match.group(1)) if chip_match else 0
@@ -184,51 +339,37 @@ def ipad_score(name):
     elif "11-inch" in name:
         size_score = 2
 
-    family_score = 0
-    if "iPad Pro" in name:
-        family_score = 4
-    elif "iPad Air" in name:
-        family_score = 3
-    elif "iPad mini" in name:
-        family_score = 1
-    else:
-        family_score = 2
-
     memory_score = 1 if "16GB" in name else 0
 
-    return (chip_generation, family_score, size_score, memory_score, name)
+    return (family_score, chip_generation, size_score, memory_score, name)
 
-def pick(prefix, scorer):
+def pick(kind_label, scorer):
+
     candidates = []
-    for name, identifier in type_map.items():
-        if not name.startswith(prefix):
-            continue
-        if name not in available_names:
+    for device in devices_for_runtime:
+        name = device.get("name")
+        if not name:
             continue
         score = scorer(name)
         if score is None:
             continue
-        udid = None
-        for device in devices_for_runtime:
-            if device.get("name") == name and device.get("isAvailable", True):
-                udid = device["udid"]
-                break
-        candidates.append((score, name, identifier, udid))
+        candidates.append((score, name, device.get("udid")))
 
     if not candidates:
-        raise SystemExit(f"No available {prefix} device found for runtime {runtime_id}")
+        raise SystemExit(f"No available {kind_label} device found for runtime {runtime_id}")
 
-    _, name, identifier, udid = max(candidates, key=lambda item: item[0])
+    _, name, udid = max(candidates, key=lambda item: item[0])
+    selected_device = next(device for device in devices_for_runtime if device.get("udid") == udid)
     return {
         "name": name,
-        "type_identifier": identifier,
+        "type_identifier": type_identifier_for_device(selected_device),
         "udid": udid,
     }
 
 print(json.dumps({
     "runtime_id": runtime_id,
-    "iphone": pick("iPhone ", iphone_score),
-    "ipad": pick("iPad ", ipad_score),
+    "iphone": pick("iPhone", iphone_score),
+    "ipad": pick("iPad", ipad_score),
 }))
 PY
 }
@@ -298,6 +439,16 @@ install_app() {
 
   xcrun simctl uninstall "$udid" "$bundle_id" >/dev/null 2>&1 || true
   xcrun simctl install "$udid" "$app_path"
+}
+
+warm_up_screenshot_capture() {
+  local udid="$1"
+  local temp_png
+
+  temp_png="$(mktemp /tmp/screenshotkit-warmup.XXXXXX.png)"
+  sleep "$PRE_CAPTURE_WARMUP_SETTLE_SECONDS"
+  xcrun simctl io "$udid" screenshot "$temp_png" >/dev/null
+  rm -f "$temp_png"
 }
 
 terminate_app() {
@@ -391,9 +542,28 @@ wait_for_capture_readiness() {
   local ready_pattern
   local marker_path="$session_dir/capture-complete"
   local error_path="$session_dir/capture-error.txt"
+  local locale_launch_values
+  local apple_languages_value
+  local apple_locale_value
 
   ready_pattern="SCREENSHOTKIT_READY sceneID=${scene_id} locale=${locale_identifier} "
   log_file="$(mktemp /tmp/screenshotkit-log.XXXXXX)"
+
+  locale_launch_values="$(python3 - "$locale_identifier" <<'PY'
+import sys
+
+locale_identifier = sys.argv[1].replace("_", "-")
+language_identifier = locale_identifier.split("-", 1)[0]
+apple_languages = [locale_identifier]
+if language_identifier and language_identifier != locale_identifier:
+    apple_languages.append(language_identifier)
+
+print("(" + ",".join(f'"{value}"' for value in apple_languages) + ")")
+print(locale_identifier.replace("-", "_"))
+PY
+)"
+  apple_languages_value="$(printf '%s\n' "$locale_launch_values" | sed -n '1p')"
+  apple_locale_value="$(printf '%s\n' "$locale_launch_values" | sed -n '2p')"
 
   xcrun simctl spawn "$udid" log stream \
     --style compact \
@@ -417,7 +587,10 @@ wait_for_capture_readiness() {
   SIMCTL_CHILD_SCREENSHOTKIT_SCENE_ID="$scene_id" \
   SIMCTL_CHILD_SCREENSHOTKIT_LOCALE="$locale_identifier" \
   SIMCTL_CHILD_SCREENSHOTKIT_SESSION_PATH="$session_dir" \
-  xcrun simctl launch --terminate-running-process "$udid" "$bundle_id" >/dev/null
+  xcrun simctl launch --terminate-running-process "$udid" "$bundle_id" \
+    -AppleLanguages "$apple_languages_value" \
+    -AppleLocale "$apple_locale_value" \
+    >/dev/null
 
   for _ in $(seq 1 "$READINESS_TIMEOUT_SECONDS"); do
     if [ -f "$error_path" ]; then
@@ -574,6 +747,7 @@ if [ -n "$DEVICE_ID_OVERRIDE" ]; then
   boot_device "$DEVICE_ID_OVERRIDE"
   build_app "$PROJECT_PATH" "$SCHEME_NAME" "$DERIVED_DATA_PATH"
   install_app "$DEVICE_ID_OVERRIDE" "$BUNDLE_ID" "$APP_PATH"
+  warm_up_screenshot_capture "$DEVICE_ID_OVERRIDE"
   run_capture_for_device "$BUNDLE_ID" "$EXECUTABLE_NAME" "$DEVICE_ID_OVERRIDE" "$TARGET_DEVICE_NAME" "$OUTPUT_ROOT"
   exit 0
 fi
@@ -597,6 +771,8 @@ boot_device "$IPAD_UDID"
 build_app "$PROJECT_PATH" "$SCHEME_NAME" "$DERIVED_DATA_PATH"
 install_app "$IPHONE_UDID" "$BUNDLE_ID" "$APP_PATH"
 install_app "$IPAD_UDID" "$BUNDLE_ID" "$APP_PATH"
+warm_up_screenshot_capture "$IPHONE_UDID"
+warm_up_screenshot_capture "$IPAD_UDID"
 
 run_capture_for_device "$BUNDLE_ID" "$EXECUTABLE_NAME" "$IPHONE_UDID" "$IPHONE_NAME" "$OUTPUT_ROOT" &
 iphone_pid=$!
