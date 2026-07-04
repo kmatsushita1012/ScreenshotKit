@@ -6,8 +6,8 @@ struct MemoListScreenshot: ScreenshotItem {
 
     var body: some View {
         ScreenshotView(
-            title: "Stay on top of every note",
-            subtitle: "Pinned memos, recent updates, and quick context at a glance"
+            title: String(localized: "screenshot.memoList.title"),
+            subtitle: String(localized: "screenshot.memoList.subtitle")
         ) {
             MemoListView(memos: Memo.screenshotList)
         }
@@ -34,8 +34,8 @@ struct MemoEditScreenshot: ScreenshotItem {
 
     var body: some View {
         ScreenshotView(
-            title: "Edit without losing focus",
-            subtitle: "Title, category, and content stay together in one calm workspace"
+            title: String(localized: "screenshot.memoEdit.title"),
+            subtitle: String(localized: "screenshot.memoEdit.subtitle")
         ) {
             MemoEditView(memo: Memo.screenshotDraft)
         }
