@@ -15,12 +15,20 @@ public protocol ScreenshotStyle: Sendable {
 
 public enum ScreenshotContent {
     case view(AnyView)
-    case image(AnyView)
+    case image(assetName: String, bundle: Bundle?)
 
     public var contentView: AnyView {
         switch self {
-        case let .view(content), let .image(content):
+        case let .view(content):
             content
+        case let .image(assetName, bundle):
+            AnyView(
+                Image(assetName, bundle: bundle)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .clipped()
+            )
         }
     }
 }

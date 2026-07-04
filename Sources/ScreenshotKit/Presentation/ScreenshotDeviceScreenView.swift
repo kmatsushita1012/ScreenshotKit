@@ -70,9 +70,13 @@ public struct ScreenshotDeviceScreenView: View {
             ScreenshotContentViewControllerWrapper {
                 content
             }
-        case let .image(content):
+        case let .image(assetName, bundle):
             ScreenshotContentViewControllerWrapper {
-                content
+                Image(assetName, bundle: bundle)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .clipped()
                     .ignoresSafeArea(.all)
             }
         }

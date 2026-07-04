@@ -75,16 +75,8 @@ public extension ScreenshotView where Background == EmptyView, Title == AnyView,
             },
             screenshotContent: {
                 .image(
-                    AnyView(
-                        Image(
-                            image.assetName(for: ScreenshotDeviceKind.current),
-                            bundle: imageBundle
-                        )
-                        .resizable()
-                        .scaledToFit()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .clipped()
-                    )
+                    assetName: image.assetName(for: ScreenshotDeviceKind.current),
+                    bundle: imageBundle
                 )
             }
         )
@@ -114,13 +106,8 @@ public extension ScreenshotView where Background == EmptyView, Title == AnyView,
             },
             screenshotContent: {
                 .image(
-                    AnyView(
-                        Image(assetName, bundle: imageBundle)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .clipped()
-                    )
+                    assetName: assetName,
+                    bundle: imageBundle
                 )
             }
         )
@@ -137,16 +124,8 @@ public extension ScreenshotView where Background == EmptyView, Title == EmptyVie
             subtitle: { EmptyView() },
             screenshotContent: {
                 .image(
-                    AnyView(
-                        Image(
-                            image.assetName(for: ScreenshotDeviceKind.current),
-                            bundle: imageBundle
-                        )
-                        .resizable()
-                        .scaledToFit()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .clipped()
-                    )
+                    assetName: image.assetName(for: ScreenshotDeviceKind.current),
+                    bundle: imageBundle
                 )
             }
         )
@@ -162,13 +141,8 @@ public extension ScreenshotView where Background == EmptyView, Title == EmptyVie
             subtitle: { EmptyView() },
             screenshotContent: {
                 .image(
-                    AnyView(
-                        Image(assetName, bundle: imageBundle)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .clipped()
-                    )
+                    assetName: assetName,
+                    bundle: imageBundle
                 )
             }
         )
