@@ -8,13 +8,11 @@ import SwiftUI
 import UIKit
 #endif
 
-public struct ScreenshotDeviceScreenView<Content: View>: View {
-    private let contentBuilder: () -> Content
+public struct ScreenshotDeviceScreenView: View {
+    private let screenshotContent: ScreenshotContent
 
-    public init(
-        @ViewBuilder content: @escaping () -> Content
-    ) {
-        self.contentBuilder = content
+    init(screenshotContent: ScreenshotContent) {
+        self.screenshotContent = screenshotContent
     }
 
     public var body: some View {
@@ -22,17 +20,19 @@ public struct ScreenshotDeviceScreenView<Content: View>: View {
         let screenCornerRadius: CGFloat = 44
         let outerBorderLineWidth = deviceKind.outerBorderLineWidth
         let innerBorderLineWidth = deviceKind.innerBorderLineWidth
+        let innerFrameThickness = innerBorderLineWidth
+        let outerFrameThickness = outerBorderLineWidth
         let outerFrameInset = innerBorderLineWidth + outerBorderLineWidth / 2
-        let frameCornerRadiusAdjustment: CGFloat = 2
-        let innerFrameCornerRadius = screenCornerRadius + frameCornerRadiusAdjustment
-        let outerFrameCornerRadius = innerFrameCornerRadius + innerBorderLineWidth / 2 + frameCornerRadiusAdjustment
+        let innerFrameCornerRadius = screenCornerRadius + innerFrameThickness / 2
+        let outerFrameCornerRadius = screenCornerRadius + innerFrameThickness + outerFrameThickness / 2
         let screenShape = RoundedRectangle(cornerRadius: screenCornerRadius, style: .continuous)
 
         ZStack {
             screenshotWrappedContent
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                .ignoresSafeArea()
 
-            if deviceKind.showsDynamicIsland {
+            if showsDynamicIslandOverlay(for: deviceKind) {
                 VStack {
                     Capsule(style: .continuous)
                         .frame(width: 100, height: 30)
@@ -49,7 +49,7 @@ public struct ScreenshotDeviceScreenView<Content: View>: View {
                 cornerRadius: outerFrameCornerRadius,
                 style: .continuous
             )
-            .stroke(platformBorderColor, lineWidth: outerBorderLineWidth)
+            .stroke(platformBorderColor, lineWidth: outerFrameThickness)
             .padding(-outerFrameInset)
         )
         .overlay(
@@ -57,21 +57,39 @@ public struct ScreenshotDeviceScreenView<Content: View>: View {
                 cornerRadius: innerFrameCornerRadius,
                 style: .continuous
             )
-            .stroke(.black, lineWidth: innerBorderLineWidth)
-            .padding(-innerBorderLineWidth / 2)
+            .stroke(.black, lineWidth: innerFrameThickness)
+            .padding(-innerFrameThickness / 2)
         )
     }
 
     @ViewBuilder
     private var screenshotWrappedContent: some View {
 #if canImport(UIKit)
-        ScreenshotContentViewControllerWrapper(
-            content: contentBuilder
-        )
-        .ignoresSafeArea(.all)
+        switch screenshotContent {
+        case let .view(content):
+            ScreenshotContentViewControllerWrapper {
+                content
+            }
+        case let .image(assetName, bundle, _):
+            Image(assetName, bundle: bundle)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                .clipped()
+                .ignoresSafeArea(.all)
+        }
 #else
-        contentBuilder()
+        screenshotContent.contentView
 #endif
+    }
+
+    private func showsDynamicIslandOverlay(for deviceKind: ScreenshotDeviceKind) -> Bool {
+        switch screenshotContent {
+        case .view:
+            return deviceKind.showsDynamicIsland
+        case let .image(_, _, showsDynamicIsland):
+            return deviceKind.showsDynamicIsland && showsDynamicIsland
+        }
     }
 }
 

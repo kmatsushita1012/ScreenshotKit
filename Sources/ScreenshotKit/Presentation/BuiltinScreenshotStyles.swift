@@ -4,6 +4,9 @@
 //
 
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
 public struct HeroScreenshotStyle: ScreenshotStyle {
     public init() {}
@@ -12,15 +15,18 @@ public struct HeroScreenshotStyle: ScreenshotStyle {
     public func makeBody(configuration: ScreenshotStyleConfiguration) -> some View {
         GeometryReader { proxy in
             let deviceKind = ScreenshotDeviceKind.current
+            let screenHeight = ScreenshotPreviewLayoutMetrics.currentScreenHeight(
+                fallbackHeight: proxy.size.height
+            )
             let previewVerticalCompensation = ScreenshotPreviewLayoutMetrics.verticalCompensation(
                 isRunningForPreview: ScreenshotPreviewLayoutMetrics.isRunningForPreview(),
                 deviceKind: deviceKind,
                 topSafeAreaInset: proxy.safeAreaInsets.top
             )
 
-            ScreenshotDeviceScreenView {
-                configuration.content
-            }
+            ScreenshotDeviceScreenView(
+                screenshotContent: configuration.screenshotContent
+            )
             .frame(width: proxy.size.width, height: proxy.size.height)
             .scaleEffect(0.7)
             .offset(x: 0, y: proxy.size.height * 0.1)
@@ -35,13 +41,17 @@ public struct HeroScreenshotStyle: ScreenshotStyle {
                 .offset(
                     x: 0,
                     y: ScreenshotPreviewLayoutMetrics.titleSubtitleVerticalOffset(
-                        for: deviceKind
-                    ) + proxy.size.height * 0.05
+                        for: deviceKind,
+                        screenHeight: screenHeight,
+                        topSafeAreaInset: proxy.safeAreaInsets.top
+                    )
                 )
             }
             .offset(x: 0, y: previewVerticalCompensation)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .ignoresSafeArea()
+        
     }
 }
 
@@ -66,22 +76,27 @@ extension DefaultScreenshotStyle: ResolvedScreenshotStyleIdentifying {
 
 enum ScreenshotPreviewLayoutMetrics {
     static let previewEnvironmentKey = "XCODE_RUNNING_FOR_PREVIEW"
-    static let approximatePhoneStatusBarHeight: CGFloat = 46
-    static let approximatePhoneScreenHeight: CGFloat = 852
-    static let approximatePadScreenHeight: CGFloat = 1366
-    static let approximatePadTitleSubtitleVerticalOffset =
-        approximatePhoneStatusBarHeight * (approximatePadScreenHeight / approximatePhoneScreenHeight)
+    static let titleTopOffsetRatio: CGFloat = 46 / 956
 
     static func isRunningForPreview(processInfo: ProcessInfo = .processInfo) -> Bool {
         processInfo.environment[previewEnvironmentKey] == "1"
     }
 
-    static func titleSubtitleVerticalOffset(for deviceKind: ScreenshotDeviceKind) -> CGFloat {
-        switch deviceKind {
+    static func titleSubtitleVerticalOffset(
+        for deviceKind: ScreenshotDeviceKind,
+        screenHeight: CGFloat,
+        topSafeAreaInset: CGFloat
+    ) -> CGFloat {
+        let baseTopOffset = max(
+            topSafeAreaInset,
+            screenHeight * titleTopOffsetRatio
+        )
+
+        return switch deviceKind {
         case .phone:
-            0
+            baseTopOffset
         case .pad:
-            approximatePadTitleSubtitleVerticalOffset
+            baseTopOffset + screenHeight * titleTopOffsetRatio
         }
     }
 
@@ -92,5 +107,13 @@ enum ScreenshotPreviewLayoutMetrics {
     ) -> CGFloat {
         guard isRunningForPreview, deviceKind == .phone else { return 0 }
         return +topSafeAreaInset
+    }
+
+    static func currentScreenHeight(fallbackHeight: CGFloat) -> CGFloat {
+#if canImport(UIKit)
+        return UIScreen.main.bounds.height
+#else
+        return fallbackHeight
+#endif
     }
 }

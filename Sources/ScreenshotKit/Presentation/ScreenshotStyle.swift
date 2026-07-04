@@ -13,15 +13,55 @@ public protocol ScreenshotStyle: Sendable {
     func makeBody(configuration: ScreenshotStyleConfiguration) -> Body
 }
 
+public enum ScreenshotContent {
+    case view(AnyView)
+    case image(assetName: String, bundle: Bundle?, showsDynamicIsland: Bool)
+
+    public var contentView: AnyView {
+        switch self {
+        case let .view(content):
+            content
+        case let .image(assetName, bundle, _):
+            AnyView(
+                Image(assetName, bundle: bundle)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                    .clipped()
+            )
+        }
+    }
+}
+
 public struct ScreenshotStyleConfiguration {
     public let title: AnyView
     public let subtitle: AnyView
-    public let content: AnyView
+    public let screenshotContent: ScreenshotContent
 
-    public init(title: AnyView, subtitle: AnyView, content: AnyView) {
+    public var content: AnyView {
+        screenshotContent.contentView
+    }
+
+    public init(
+        title: AnyView,
+        subtitle: AnyView,
+        content: AnyView
+    ) {
+        self.init(
+            title: title,
+            subtitle: subtitle,
+            screenshotContent: .view(content)
+        )
+    }
+
+    public init(
+        title: AnyView,
+        subtitle: AnyView,
+        screenshotContent: ScreenshotContent
+    ) {
         self.title = title
         self.subtitle = subtitle
-        self.content = content
+        self.screenshotContent = screenshotContent
     }
 }
 

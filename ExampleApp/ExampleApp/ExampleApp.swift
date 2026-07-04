@@ -9,6 +9,7 @@ struct ExampleApp: App {
                 .screenshot {
                     MemoListScreenshot()
                     MemoEditScreenshot()
+                    MemoPreviewScreenshot()
                 }
         }
     }
