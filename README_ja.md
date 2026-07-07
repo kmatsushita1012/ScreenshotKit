@@ -44,7 +44,7 @@ dependencies: [
 ]
 ```
 
-パッケージ追加と同じタイミングで、exporter は自動では入らないため [scripts/export_screenshots.sh](scripts/export_screenshots.sh) をアプリ側リポジトリへ別途配置してください。
+このパッケージには `screenshotkit-export` という `ExecutableTarget` も含まれているため、単独のスクリプトを配るより SwiftPM と揃った形で export フローを管理できます。
 
 ### 2. ルート View にスクショ対象を登録する
 
@@ -80,24 +80,32 @@ struct HomeScreenshot: ScreenshotItem {
 }
 ```
 
-### 3. アプリのプロジェクトルートで書き出す
+### 3. exporter を実行する
+
+このパッケージのリポジトリ上で次を実行します。
 
 ```bash
-./scripts/export_screenshots.sh --output-dir ./output
+swift run screenshotkit-export --project ExampleApp/ExampleApp.xcodeproj --output-dir ./output
 ```
 
-これで `./output` にスクリーンショットを書き出せます。
+互換用ラッパーとして次も使えます。
+
+```bash
+./scripts/export_screenshots.sh --project ExampleApp/ExampleApp.xcodeproj --output-dir ./output
+```
+
+別アプリを書き出すときは `--project` に対象の `.xcodeproj` を渡してください。
 
 ## 仕様
 
 ### 起動フロー
 
-1. export script がアプリを `manifest` モードで起動する
+1. exporter がアプリを `manifest` モードで起動する
 2. ScreenshotKit が登録済み `ScreenshotItem` と localization 一覧を読む
 3. `locale × scene` の manifest を作る
-4. script が各キャプチャジョブごとにアプリを再起動する
+4. exporter が各キャプチャジョブごとにアプリを再起動する
 5. ScreenshotKit が指定 scene を描画して readiness を通知する
-6. script が Simulator 上の表示結果を PNG として保存する
+6. exporter が Simulator 上の表示結果を PNG として保存する
 
 UI Test を介さず、役割分担がはっきりしているのがこの方式の強みです。
 
@@ -115,7 +123,7 @@ ScreenshotKit は、ビルドされたアプリ bundle に含まれる localizat
 - スクショ内の文言も通常どおりローカライズする
 - 1 回の export で対応言語をまとめて生成する
 
-`.xcodeproj` は export script 側で自動発見に使われ、そこから app build settings を引き当てます。言語の最終的な列挙は、実際に build された app bundle を正として行われます。
+`.xcodeproj` は exporter 側で自動発見に使われ、そこから app build settings を引き当てます。言語の最終的な列挙は、実際に build された app bundle を正として行われます。
 
 ### 出力構造
 
@@ -134,12 +142,12 @@ Application Support/
             home.png
 ```
 
-その後 export script が最終成果物を指定ディレクトリへコピーし、device ごとに manifest も残します。
+その後 exporter が最終成果物を指定ディレクトリへコピーし、device ごとに manifest も残します。
 
 ### 注意点
 
 - iOS 専用です
-- export script は `.xcodeproj` を見つけられるアプリプロジェクト前提です
+- exporter は `.xcodeproj` を見つけられるアプリプロジェクト前提です
 - 画像ベース scene を使う場合は対象 asset を app target に含めてください
 
 ## 応用
@@ -227,17 +235,19 @@ struct AlarmScreenshot: ScreenshotItem {
 
 同じ画像を両デバイスで使う場合は、同じ asset 名を 2 回渡してください。
 
-### Export script
+### Export executable
 
-export script は位置引数と named option の両方に対応しています。
+exporter は位置引数と named option の両方に対応しています。
 
 ```bash
-./scripts/export_screenshots.sh [output-dir] [device-id]
-./scripts/export_screenshots.sh --output-dir ./output --device-id <simulator-udid>
-./scripts/export_screenshots.sh --project path/to/App.xcodeproj
+swift run screenshotkit-export [output-dir] [device-id]
+swift run screenshotkit-export --output-dir ./output --device-id <simulator-udid>
+swift run screenshotkit-export --project path/to/App.xcodeproj
 ```
 
-script は利用可能なアプリプロジェクトを見つけ、最新の iOS runtime から代表的な iPhone / iPad Simulator を選び、app bundle に含まれる各 locale ごとに書き出し、device ごとの manifest を出力先へ保存します。
+exporter は利用可能なアプリプロジェクトを見つけ、最新の iOS runtime から代表的な iPhone / iPad Simulator を選び、app bundle に含まれる各 locale ごとに書き出し、device ごとの manifest を出力先へ保存します。
+
+[scripts/export_screenshots.sh](scripts/export_screenshots.sh) は `swift run screenshotkit-export` を呼ぶ互換用ラッパーです。
 
 ### ExampleApp
 
@@ -250,4 +260,4 @@ script は利用可能なアプリプロジェクトを見つけ、最新の iOS
 
 ## License
 
-必要に応じて追加してください。
+MIT です。詳細は [LICENSE](LICENSE) を参照してください。
