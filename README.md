@@ -44,8 +44,6 @@ dependencies: [
 ]
 ```
 
-When you add the package, also copy [scripts/export_screenshots.sh](scripts/export_screenshots.sh) into your app repository because the exporter is not installed there automatically.
-
 ### 2. Register screenshot scenes in your root view
 
 ```swift
@@ -80,24 +78,26 @@ struct HomeScreenshot: ScreenshotItem {
 }
 ```
 
-### 3. Run the exporter from your app project
+### 3. Run the exporter
+
+From this package repository:
 
 ```bash
-./scripts/export_screenshots.sh --output-dir ./output
+swift run screenshotkit-export --project ExampleApp/ExampleApp.xcodeproj --output-dir ./output
 ```
 
-This exports screenshots into `./output`.
+When exporting another app, point `--project` at that app's `.xcodeproj`.
 
 ## Specification
 
 ### Capture flow
 
-1. The export script launches the app in `manifest` mode.
+1. The executable launches the app in `manifest` mode.
 2. ScreenshotKit reads registered `ScreenshotItem`s and bundle localizations.
 3. A manifest is written for `locale × scene`.
-4. The script relaunches the app for each capture job.
+4. The executable relaunches the app for each capture job.
 5. ScreenshotKit renders the requested scene and publishes readiness.
-6. The script captures the simulator output and stores the final PNG.
+6. The executable captures the simulator output and stores the final PNG.
 
 This keeps the orchestration explicit and avoids a UI test layer.
 
@@ -132,12 +132,12 @@ Application Support/
             home.png
 ```
 
-The export script then copies the final outputs into your target directory and keeps one manifest per device.
+The executable then copies the final outputs into your target directory and keeps one manifest per device.
 
 ### Limitations
 
 - iOS only
-- the export script expects an app project with a discoverable `.xcodeproj`
+- the executable expects an app project with a discoverable `.xcodeproj`
 - image-based scenes require the asset to be bundled in the app target
 
 ## Advanced Usage
@@ -225,17 +225,17 @@ struct AlarmScreenshot: ScreenshotItem {
 
 If the same asset is valid for both device kinds, pass the same name twice.
 
-### Export script
+### Export executable
 
-The export script supports positional arguments and named options:
+The exporter supports positional arguments and named options:
 
 ```bash
-./scripts/export_screenshots.sh [output-dir] [device-id]
-./scripts/export_screenshots.sh --output-dir ./output --device-id <simulator-udid>
-./scripts/export_screenshots.sh --project path/to/App.xcodeproj
+swift run screenshotkit-export [output-dir] [device-id]
+swift run screenshotkit-export --output-dir ./output --device-id <simulator-udid>
+swift run screenshotkit-export --project path/to/App.xcodeproj
 ```
 
-The script discovers a usable app project, picks flagship iPhone and iPad simulators from the latest available iOS runtime, launches each locale declared by the app bundle, and writes one manifest per device into the output directory.
+The executable discovers a usable app project, picks flagship iPhone and iPad simulators from the latest available iOS runtime, launches each locale declared by the app bundle, and writes one manifest per device into the output directory.
 
 ### Example app
 
@@ -248,4 +248,4 @@ Use it to confirm the package setup, Preview-based editing, and end-to-end expor
 
 ## License
 
-Add your preferred license here.
+MIT. See [LICENSE](LICENSE).

@@ -232,12 +232,23 @@ func previewLayoutMetricsCompensateTopInsetOnlyInPreview() {
 
 @Test
 func previewLayoutMetricsUseFixedPadTitleOffsetOnlyForPad() {
+    let screenHeight: CGFloat = 956
+    let topSafeAreaInset: CGFloat = 0
+    let baseTopOffset = screenHeight * ScreenshotPreviewLayoutMetrics.titleTopOffsetRatio
+
     #expect(
-        ScreenshotPreviewLayoutMetrics.titleSubtitleVerticalOffset(for: .phone) == 0
+        ScreenshotPreviewLayoutMetrics.titleSubtitleVerticalOffset(
+            for: .phone,
+            screenHeight: screenHeight,
+            topSafeAreaInset: topSafeAreaInset
+        ) == baseTopOffset
     )
     #expect(
-        ScreenshotPreviewLayoutMetrics.titleSubtitleVerticalOffset(for: .pad)
-        == ScreenshotPreviewLayoutMetrics.approximatePadTitleSubtitleVerticalOffset
+        ScreenshotPreviewLayoutMetrics.titleSubtitleVerticalOffset(
+            for: .pad,
+            screenHeight: screenHeight,
+            topSafeAreaInset: topSafeAreaInset
+        ) == baseTopOffset * 2
     )
 }
 
@@ -258,6 +269,7 @@ func defaultScreenshotStyleResolvesToHero() {
 }
 
 @Test
+@MainActor
 func screenshotStyleModifierAcceptsBuiltinShortSyntax() {
     let view = ScreenshotView(
         title: "Title",
@@ -273,6 +285,7 @@ func screenshotStyleModifierAcceptsBuiltinShortSyntax() {
 }
 
 @Test
+@MainActor
 func screenshotStyleModifierAcceptsCustomStyle() {
     let view = ScreenshotView(
         title: "Title",

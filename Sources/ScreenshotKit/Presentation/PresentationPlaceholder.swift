@@ -30,7 +30,7 @@ private func makeRegistry(from items: [any ScreenshotItem]) -> ScreenshotRegistr
     var descriptors: [ScreenshotDescriptor] = []
     var mutableFactories: [String: @Sendable () -> AnyView] = [:]
 
-    for (index, item) in items.enumerated() {
+    for item in items {
         let metatype = type(of: item)
         let id = metatype.id
 

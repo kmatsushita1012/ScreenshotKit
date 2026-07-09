@@ -59,20 +59,22 @@ struct ScreenshotSceneRenderedPreferenceKey: PreferenceKey {
     }
 }
 
-#Preview {
-    ScreenshotView(
-        title: "とても賢いアプリです",
-        subtitle: "ダウンロード必須ダウンロード必須"
-    ) {
-        VStack {
-            Text("Hello, World!")
+#if os(iOS)
+    #Preview {
+        ScreenshotView(
+            title: "とても賢いアプリです",
+            subtitle: "ダウンロード必須ダウンロード必須"
+        ) {
+            VStack {
+                Text("Hello, World!")
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .background(Color.mint)
+            .navigationTitle("Hello")
+            .toolbar {
+                EditButton()
+            }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .background(Color.mint)
-        .navigationTitle("Hello")
-        .toolbar {
-            EditButton()
-        }
+        .screenshotStyle(.hero)
     }
-    .screenshotStyle(.hero)
-}
+#endif
