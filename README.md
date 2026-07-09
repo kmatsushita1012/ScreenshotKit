@@ -44,8 +44,6 @@ dependencies: [
 ]
 ```
 
-The package also ships an executable product named `screenshotkit-export`, so you can keep the export flow versioned with SwiftPM instead of copying a standalone script.
-
 ### 2. Register screenshot scenes in your root view
 
 ```swift
@@ -86,12 +84,6 @@ From this package repository:
 
 ```bash
 swift run screenshotkit-export --project ExampleApp/ExampleApp.xcodeproj --output-dir ./output
-```
-
-Or use the compatibility wrapper:
-
-```bash
-./scripts/export_screenshots.sh --project ExampleApp/ExampleApp.xcodeproj --output-dir ./output
 ```
 
 When exporting another app, point `--project` at that app's `.xcodeproj`.
@@ -244,8 +236,6 @@ swift run screenshotkit-export --project path/to/App.xcodeproj
 ```
 
 The executable discovers a usable app project, picks flagship iPhone and iPad simulators from the latest available iOS runtime, launches each locale declared by the app bundle, and writes one manifest per device into the output directory.
-
-The compatibility wrapper at [scripts/export_screenshots.sh](scripts/export_screenshots.sh) simply forwards to `swift run screenshotkit-export`.
 
 ### Example app
 

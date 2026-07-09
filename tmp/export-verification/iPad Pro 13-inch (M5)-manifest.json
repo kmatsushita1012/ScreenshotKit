@@ -1,0 +1,42 @@
+{
+  "deviceName" : "iPad Pro 13-inch (M5)",
+  "entries" : [
+    {
+      "localeIdentifier" : "ja-JP",
+      "outputIdentifier" : "memo-list",
+      "relativePath" : "iPad Pro 13-inch (M5)\/ja-JP\/memo-list.png",
+      "sceneID" : "memo-list"
+    },
+    {
+      "localeIdentifier" : "ja-JP",
+      "outputIdentifier" : "memo-edit",
+      "relativePath" : "iPad Pro 13-inch (M5)\/ja-JP\/memo-edit.png",
+      "sceneID" : "memo-edit"
+    },
+    {
+      "localeIdentifier" : "ja-JP",
+      "outputIdentifier" : "memo-preview",
+      "relativePath" : "iPad Pro 13-inch (M5)\/ja-JP\/memo-preview.png",
+      "sceneID" : "memo-preview"
+    },
+    {
+      "localeIdentifier" : "en-US",
+      "outputIdentifier" : "memo-list",
+      "relativePath" : "iPad Pro 13-inch (M5)\/en-US\/memo-list.png",
+      "sceneID" : "memo-list"
+    },
+    {
+      "localeIdentifier" : "en-US",
+      "outputIdentifier" : "memo-edit",
+      "relativePath" : "iPad Pro 13-inch (M5)\/en-US\/memo-edit.png",
+      "sceneID" : "memo-edit"
+    },
+    {
+      "localeIdentifier" : "en-US",
+      "outputIdentifier" : "memo-preview",
+      "relativePath" : "iPad Pro 13-inch (M5)\/en-US\/memo-preview.png",
+      "sceneID" : "memo-preview"
+    }
+  ],
+  "sessionDirectoryPath" : "\/Users\/matsushitakazuya\/Library\/Developer\/CoreSimulator\/Devices\/EFD12C83-F200-4115-BB44-0414B8FEACE9\/data\/Containers\/Data\/Application\/DB629E9D-886B-40AF-ACDE-ACD67D5B0618\/Library\/Application Support\/ScreenshotKit\/Sessions\/session-20260708-102645-889"
+}

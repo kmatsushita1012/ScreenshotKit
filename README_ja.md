@@ -44,8 +44,6 @@ dependencies: [
 ]
 ```
 
-このパッケージには `screenshotkit-export` という `ExecutableTarget` も含まれているため、単独のスクリプトを配るより SwiftPM と揃った形で export フローを管理できます。
-
 ### 2. ルート View にスクショ対象を登録する
 
 ```swift
@@ -86,12 +84,6 @@ struct HomeScreenshot: ScreenshotItem {
 
 ```bash
 swift run screenshotkit-export --project ExampleApp/ExampleApp.xcodeproj --output-dir ./output
-```
-
-互換用ラッパーとして次も使えます。
-
-```bash
-./scripts/export_screenshots.sh --project ExampleApp/ExampleApp.xcodeproj --output-dir ./output
 ```
 
 別アプリを書き出すときは `--project` に対象の `.xcodeproj` を渡してください。
@@ -246,8 +238,6 @@ swift run screenshotkit-export --project path/to/App.xcodeproj
 ```
 
 exporter は利用可能なアプリプロジェクトを見つけ、最新の iOS runtime から代表的な iPhone / iPad Simulator を選び、app bundle に含まれる各 locale ごとに書き出し、device ごとの manifest を出力先へ保存します。
-
-[scripts/export_screenshots.sh](scripts/export_screenshots.sh) は `swift run screenshotkit-export` を呼ぶ互換用ラッパーです。
 
 ### ExampleApp
 
