@@ -79,6 +79,7 @@ private struct ScreenshotModifier: ViewModifier {
             content: content,
             registry: registry
         )
+        .statusBarHidden(true)
 #else
         content
 #endif

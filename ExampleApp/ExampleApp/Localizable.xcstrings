@@ -595,6 +595,40 @@
           }
         }
       }
+    },
+    "screenshot.memoPreview.subtitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reuse one screenshot item while tailoring prepared artwork for iPhone and iPad"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ひとつのスクリーンショット項目を再利用して、iPhoneとiPadに合わせたアートワークを表示"
+          }
+        }
+      }
+    },
+    "screenshot.memoPreview.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show every device at its best"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "すべてのデバイスを、最高の状態で"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

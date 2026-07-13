@@ -93,11 +93,11 @@ public struct ScreenshotDeviceScreenView: View {
     }
 }
 
-enum ScreenshotDeviceKind {
+public enum ScreenshotDeviceKind {
     case phone
     case pad
 
-    static var current: Self {
+    public static var current: Self {
 #if canImport(UIKit)
         Self(idiom: UIDevice.current.userInterfaceIdiom)
 #else

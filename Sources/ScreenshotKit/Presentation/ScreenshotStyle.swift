@@ -13,6 +13,17 @@ public protocol ScreenshotStyle: Sendable {
     func makeBody(configuration: ScreenshotStyleConfiguration) -> Body
 }
 
+public extension ScreenshotStyle {
+    var deviceKind: ScreenshotDeviceKind { .current }
+    var deviceScale: CGFloat { 0.7 }
+    var deviceVerticalOffsetRatio: CGFloat { 0.1 }
+    var titleSubtitleSpacing: CGFloat { 8 }
+    var titleSubtitleHorizontalPadding: CGFloat { 16 }
+    var isRunningForPreview: Bool {
+        ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEW"] == "1"
+    }
+}
+
 public enum ScreenshotContent {
     case view(AnyView)
     case image(assetName: String, bundle: Bundle?, showsDynamicIsland: Bool)

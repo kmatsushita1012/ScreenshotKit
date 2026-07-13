@@ -27,7 +27,6 @@ struct Exporter {
             try simulatorService.bootDevice(deviceID)
             try buildApp(project: project, derivedDataPath: derivedDataPath)
             try simulatorService.installApp(udid: deviceID, bundleID: project.bundleID, appPath: appPath)
-            try await simulatorService.warmUpCapture(udid: deviceID)
             try await runCaptureForDevice(
                 project: project,
                 udid: deviceID,
@@ -47,8 +46,6 @@ struct Exporter {
         try buildApp(project: project, derivedDataPath: derivedDataPath)
         try simulatorService.installApp(udid: iphoneUDID, bundleID: project.bundleID, appPath: appPath)
         try simulatorService.installApp(udid: ipadUDID, bundleID: project.bundleID, appPath: appPath)
-        try await simulatorService.warmUpCapture(udid: iphoneUDID)
-        try await simulatorService.warmUpCapture(udid: ipadUDID)
 
         try await runCaptureForDevice(
             project: project,
@@ -144,6 +141,7 @@ struct Exporter {
                 "SIMCTL_CHILD_SCREENSHOTKIT_DEVICE_NAME": rawDeviceName,
             ]
         )
+        try await simulatorService.warmUpCapture(udid: udid)
 
         for _ in 0..<300 {
             if fileManager.fileExists(atPath: latestSessionPointerURL.path) {

@@ -63,8 +63,8 @@ struct MemoPreviewScreenshot: ScreenshotItem {
 
     var body: some View {
         ScreenshotView(
-            title: "Show every device at its best",
-            subtitle: "Reuse one screenshot item while tailoring prepared artwork for iPhone and iPad",
+            title: String(localized: "screenshot.memoPreview.title"),
+            subtitle: String(localized: "screenshot.memoPreview.subtitle"),
             image: .init(phone: "MemoPreviewPhone", pad: "MemoPreviewPad")
         )
         .background(

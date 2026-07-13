@@ -1,42 +1,42 @@
 {
-  "deviceName": "iPhone 17 Pro Max",
-  "entries": [
+  "deviceName" : "iPhone 17 Pro Max",
+  "entries" : [
     {
-      "localeIdentifier": "ja-JP",
-      "outputIdentifier": "memo-list",
-      "sceneID": "memo-list",
-      "relativePath": "iPhone 17 Pro Max/ja-JP/memo-list.png"
+      "localeIdentifier" : "ja-JP",
+      "outputIdentifier" : "memo-list",
+      "relativePath" : "iPhone 17 Pro Max\/ja-JP\/memo-list.png",
+      "sceneID" : "memo-list"
     },
     {
-      "localeIdentifier": "ja-JP",
-      "outputIdentifier": "memo-edit",
-      "sceneID": "memo-edit",
-      "relativePath": "iPhone 17 Pro Max/ja-JP/memo-edit.png"
+      "localeIdentifier" : "ja-JP",
+      "outputIdentifier" : "memo-edit",
+      "relativePath" : "iPhone 17 Pro Max\/ja-JP\/memo-edit.png",
+      "sceneID" : "memo-edit"
     },
     {
-      "localeIdentifier": "ja-JP",
-      "outputIdentifier": "memo-preview",
-      "sceneID": "memo-preview",
-      "relativePath": "iPhone 17 Pro Max/ja-JP/memo-preview.png"
+      "localeIdentifier" : "ja-JP",
+      "outputIdentifier" : "memo-preview",
+      "relativePath" : "iPhone 17 Pro Max\/ja-JP\/memo-preview.png",
+      "sceneID" : "memo-preview"
     },
     {
-      "localeIdentifier": "en-US",
-      "outputIdentifier": "memo-list",
-      "sceneID": "memo-list",
-      "relativePath": "iPhone 17 Pro Max/en-US/memo-list.png"
+      "localeIdentifier" : "en-US",
+      "outputIdentifier" : "memo-list",
+      "relativePath" : "iPhone 17 Pro Max\/en-US\/memo-list.png",
+      "sceneID" : "memo-list"
     },
     {
-      "localeIdentifier": "en-US",
-      "outputIdentifier": "memo-edit",
-      "sceneID": "memo-edit",
-      "relativePath": "iPhone 17 Pro Max/en-US/memo-edit.png"
+      "localeIdentifier" : "en-US",
+      "outputIdentifier" : "memo-edit",
+      "relativePath" : "iPhone 17 Pro Max\/en-US\/memo-edit.png",
+      "sceneID" : "memo-edit"
     },
     {
-      "localeIdentifier": "en-US",
-      "outputIdentifier": "memo-preview",
-      "sceneID": "memo-preview",
-      "relativePath": "iPhone 17 Pro Max/en-US/memo-preview.png"
+      "localeIdentifier" : "en-US",
+      "outputIdentifier" : "memo-preview",
+      "relativePath" : "iPhone 17 Pro Max\/en-US\/memo-preview.png",
+      "sceneID" : "memo-preview"
     }
   ],
-  "sessionDirectoryPath": "/Users/matsushitakazuya/Library/Developer/CoreSimulator/Devices/C33D6D46-E1FE-4330-9D13-837755291681/data/Containers/Data/Application/5B0CEDA9-CAC8-42D1-995B-7B09175E5BF5/Library/Application Support/ScreenshotKit/Sessions/session-20260704-094931-443"
+  "sessionDirectoryPath" : "\/Users\/matsushitakazuya\/Library\/Developer\/CoreSimulator\/Devices\/C33D6D46-E1FE-4330-9D13-837755291681\/data\/Containers\/Data\/Application\/E703E1C8-9933-45AC-911B-BA563366CE79\/Library\/Application Support\/ScreenshotKit\/Sessions\/session-20260713-135926-654"
 }

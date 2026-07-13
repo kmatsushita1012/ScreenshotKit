@@ -196,60 +196,13 @@ func localeProviderNormalizesCommonLanguageIdentifiers() {
 }
 
 @Test
-func previewLayoutMetricsDetectPreviewEnvironment() {
-    let processInfo = ProcessInfoFixture(
-        arguments: [],
-        environment: [ScreenshotPreviewLayoutMetrics.previewEnvironmentKey: "1"]
-    )
+func screenshotStyleProvidesSharedLayoutProperties() {
+    let style = TestScreenshotStyle()
 
-    #expect(ScreenshotPreviewLayoutMetrics.isRunningForPreview(processInfo: processInfo))
-}
-
-@Test
-func previewLayoutMetricsCompensateTopInsetOnlyInPreview() {
-    #expect(
-        ScreenshotPreviewLayoutMetrics.verticalCompensation(
-            isRunningForPreview: true,
-            deviceKind: .phone,
-            topSafeAreaInset: 54
-        ) == 54
-    )
-    #expect(
-        ScreenshotPreviewLayoutMetrics.verticalCompensation(
-            isRunningForPreview: false,
-            deviceKind: .phone,
-            topSafeAreaInset: 54
-        ) == 0
-    )
-    #expect(
-        ScreenshotPreviewLayoutMetrics.verticalCompensation(
-            isRunningForPreview: true,
-            deviceKind: .pad,
-            topSafeAreaInset: 54
-        ) == 0
-    )
-}
-
-@Test
-func previewLayoutMetricsUseFixedPadTitleOffsetOnlyForPad() {
-    let screenHeight: CGFloat = 956
-    let topSafeAreaInset: CGFloat = 0
-    let baseTopOffset = screenHeight * ScreenshotPreviewLayoutMetrics.titleTopOffsetRatio
-
-    #expect(
-        ScreenshotPreviewLayoutMetrics.titleSubtitleVerticalOffset(
-            for: .phone,
-            screenHeight: screenHeight,
-            topSafeAreaInset: topSafeAreaInset
-        ) == baseTopOffset
-    )
-    #expect(
-        ScreenshotPreviewLayoutMetrics.titleSubtitleVerticalOffset(
-            for: .pad,
-            screenHeight: screenHeight,
-            topSafeAreaInset: topSafeAreaInset
-        ) == baseTopOffset * 2
-    )
+    #expect(style.deviceScale == 0.7)
+    #expect(style.deviceVerticalOffsetRatio == 0.1)
+    #expect(style.titleSubtitleSpacing == 8)
+    #expect(style.titleSubtitleHorizontalPadding == 16)
 }
 
 @Test
