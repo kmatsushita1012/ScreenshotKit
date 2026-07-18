@@ -22,12 +22,12 @@ struct MemoListScreenshot: ScreenshotItem {
                 endPoint: .bottomTrailing
             )
         )
+        .screenshotStyle(.default)
     }
 }
 
 #Preview {
     MemoListScreenshot()
-        .screenshotStyle(.default)
 }
 
 struct MemoEditScreenshot: ScreenshotItem {
@@ -52,12 +52,12 @@ struct MemoEditScreenshot: ScreenshotItem {
                 endRadius: 520
             )
         )
+        .screenshotStyle(.deviceTop)
     }
 }
 
 #Preview {
     MemoEditScreenshot()
-        .screenshotStyle(.deviceTop)
 }
 
 struct MemoPreviewScreenshot: ScreenshotItem {
@@ -80,11 +80,11 @@ struct MemoPreviewScreenshot: ScreenshotItem {
                 endPoint: .topTrailing
             )
         )
+        .screenshotStyle(.deviceBottom)
     }
 }
 
 
 #Preview {
     MemoPreviewScreenshot()
-        .screenshotStyle(.deviceBottom)
 }

@@ -4,9 +4,6 @@
 //
 
 import SwiftUI
-#if canImport(UIKit)
-import UIKit
-#endif
 
 public struct HeroScreenshotStyle: ScreenshotStyle {
     public init() {}
@@ -14,21 +11,6 @@ public struct HeroScreenshotStyle: ScreenshotStyle {
     @MainActor
     public func makeBody(configuration: ScreenshotStyleConfiguration) -> some View {
         GeometryReader { proxy in
-            let screenHeight = Self.currentScreenHeight(
-                fallbackHeight: proxy.size.height
-            )
-            let titleSubtitleVerticalOffset = Self.titleSubtitleVerticalOffset(
-                deviceKind: deviceKind,
-                screenHeight: screenHeight,
-                topSafeAreaInset: proxy.safeAreaInsets.top,
-                titleTopOffsetRatio: Self.titleTopOffsetRatio
-            )
-            let previewSafeAreaCompensation = Self.previewSafeAreaCompensation(
-                isRunningForPreview: isRunningForPreview,
-                deviceKind: deviceKind,
-                topSafeAreaInset: proxy.safeAreaInsets.top
-            )
-
             ScreenshotDeviceScreenView(
                 screenshotContent: configuration.screenshotContent
             )
@@ -36,57 +18,36 @@ public struct HeroScreenshotStyle: ScreenshotStyle {
             .scaleEffect(deviceScale)
             .offset(x: 0, y: proxy.size.height * deviceVerticalOffsetRatio)
             .overlay(alignment: .top) {
-                VStack(spacing: titleSubtitleSpacing) {
-                    configuration.title
-                        .multilineTextAlignment(.center)
-                    configuration.subtitle
-                        .multilineTextAlignment(.center)
-                }
-                .padding(.horizontal, titleSubtitleHorizontalPadding)
-                .offset(x: 0, y: titleSubtitleVerticalOffset)
+                // proxy.size.height は safe area を含むキャンバス全体の高さ。
+                // 0.25H の領域を上端に置き、その中心を 0.125H に固定する。
+                textContent(configuration: configuration)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: proxy.size.height * Self.textRegionHeightRatio)
             }
-            .offset(x: 0, y: previewSafeAreaCompensation)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .ignoresSafeArea()
     }
+
+    private func textContent(configuration: ScreenshotStyleConfiguration) -> some View {
+        VStack(spacing: titleSubtitleSpacing) {
+            configuration.title
+                .multilineTextAlignment(.center)
+                .lineLimit(nil)
+                .frame(maxWidth: .infinity)
+                .fixedSize(horizontal: false, vertical: true)
+            configuration.subtitle
+                .multilineTextAlignment(.center)
+                .lineLimit(nil)
+                .frame(maxWidth: .infinity)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.horizontal, titleSubtitleHorizontalPadding)
+    }
 }
 
 private extension HeroScreenshotStyle {
-    static let titleTopOffsetRatio: CGFloat = 46 / 956
-
-    static func currentScreenHeight(fallbackHeight: CGFloat) -> CGFloat {
-#if canImport(UIKit)
-        return UIScreen.main.bounds.height
-#else
-        return fallbackHeight
-#endif
-    }
-
-    static func titleSubtitleVerticalOffset(
-        deviceKind: ScreenshotDeviceKind,
-        screenHeight: CGFloat,
-        topSafeAreaInset: CGFloat,
-        titleTopOffsetRatio: CGFloat
-    ) -> CGFloat {
-        let baseTopOffset = max(topSafeAreaInset, screenHeight * titleTopOffsetRatio)
-
-        switch deviceKind {
-        case .phone:
-            return baseTopOffset
-        case .pad:
-            return baseTopOffset + screenHeight * titleTopOffsetRatio
-        }
-    }
-
-    static func previewSafeAreaCompensation(
-        isRunningForPreview: Bool,
-        deviceKind: ScreenshotDeviceKind,
-        topSafeAreaInset: CGFloat
-    ) -> CGFloat {
-        guard isRunningForPreview, deviceKind == .phone else { return 0 }
-        return topSafeAreaInset
-    }
+    static let textRegionHeightRatio: CGFloat = 0.25
 }
 
 public extension ScreenshotStyle where Self == HeroScreenshotStyle {
