@@ -49,7 +49,6 @@ public struct HeroScreenshotStyle: ScreenshotStyle {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .ignoresSafeArea()
-        
     }
 }
 
@@ -90,21 +89,10 @@ private extension HeroScreenshotStyle {
     }
 }
 
+public extension ScreenshotStyle where Self == HeroScreenshotStyle {
+    static var hero: HeroScreenshotStyle { HeroScreenshotStyle() }
+}
+
 extension HeroScreenshotStyle: ResolvedScreenshotStyleIdentifying {
-    var resolvedStyleIdentifier: String { "hero" }
-}
-
-public struct DefaultScreenshotStyle: ScreenshotStyle {
-    private let heroStyle = HeroScreenshotStyle()
-
-    public init() {}
-
-    @MainActor
-    public func makeBody(configuration: ScreenshotStyleConfiguration) -> some View {
-        heroStyle.makeBody(configuration: configuration)
-    }
-}
-
-extension DefaultScreenshotStyle: ResolvedScreenshotStyleIdentifying {
     var resolvedStyleIdentifier: String { "hero" }
 }

@@ -27,6 +27,7 @@ struct MemoListScreenshot: ScreenshotItem {
 
 #Preview {
     MemoListScreenshot()
+        .screenshotStyle(.default)
 }
 
 struct MemoEditScreenshot: ScreenshotItem {
@@ -56,6 +57,7 @@ struct MemoEditScreenshot: ScreenshotItem {
 
 #Preview {
     MemoEditScreenshot()
+        .screenshotStyle(.deviceTop)
 }
 
 struct MemoPreviewScreenshot: ScreenshotItem {
@@ -84,4 +86,5 @@ struct MemoPreviewScreenshot: ScreenshotItem {
 
 #Preview {
     MemoPreviewScreenshot()
+        .screenshotStyle(.deviceBottom)
 }

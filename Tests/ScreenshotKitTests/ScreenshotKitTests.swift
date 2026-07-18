@@ -200,9 +200,23 @@ func screenshotStyleProvidesSharedLayoutProperties() {
     let style = TestScreenshotStyle()
 
     #expect(style.deviceScale == 0.7)
+    #expect(style.deviceVisibleHeightRatio == 0.6)
     #expect(style.deviceVerticalOffsetRatio == 0.1)
     #expect(style.titleSubtitleSpacing == 8)
     #expect(style.titleSubtitleHorizontalPadding == 16)
+}
+
+@Test
+func devicePositionStylesProvideBuiltinShortSyntaxAndLayoutDefaults() {
+    let topStyle = AnyScreenshotStyle(DeviceTopScreenshotStyle())
+    let bottomStyle = AnyScreenshotStyle(DeviceBottomScreenshotStyle())
+
+    #expect(topStyle.resolvedStyleIdentifier == "device-top")
+    #expect(bottomStyle.resolvedStyleIdentifier == "device-bottom")
+    #expect(DeviceTopScreenshotStyle().deviceScale == 0.8)
+    #expect(DeviceBottomScreenshotStyle().deviceScale == 0.8)
+    #expect(DeviceTopScreenshotStyle().deviceVisibleHeightRatio == 0.6)
+    #expect(DeviceBottomScreenshotStyle().deviceVisibleHeightRatio == 0.6)
 }
 
 @Test

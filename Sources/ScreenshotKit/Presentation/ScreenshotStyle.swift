@@ -16,6 +16,7 @@ public protocol ScreenshotStyle: Sendable {
 public extension ScreenshotStyle {
     var deviceKind: ScreenshotDeviceKind { .current }
     var deviceScale: CGFloat { 0.7 }
+    var deviceVisibleHeightRatio: CGFloat { 0.6 }
     var deviceVerticalOffsetRatio: CGFloat { 0.1 }
     var titleSubtitleSpacing: CGFloat { 8 }
     var titleSubtitleHorizontalPadding: CGFloat { 16 }
@@ -105,12 +106,4 @@ public extension View {
     func screenshotStyle<S: ScreenshotStyle>(_ style: S) -> some View {
         environment(\.screenshotStyle, AnyScreenshotStyle(style))
     }
-}
-
-public extension ScreenshotStyle where Self == HeroScreenshotStyle {
-    static var hero: HeroScreenshotStyle { HeroScreenshotStyle() }
-}
-
-public extension ScreenshotStyle where Self == DefaultScreenshotStyle {
-    static var `default`: DefaultScreenshotStyle { DefaultScreenshotStyle() }
 }
