@@ -79,7 +79,6 @@ private struct ScreenshotModifier: ViewModifier {
             content: content,
             registry: registry
         )
-        .statusBarHidden(true)
 #else
         content
 #endif
@@ -315,6 +314,7 @@ public struct ScreenshotContainerView<Content: View>: View {
                         viewModel.sceneDidBecomeReady(readiness)
                     }
                 )
+                .statusBarHidden(true)
             }
         }
         .task {
@@ -386,7 +386,6 @@ private struct LiveRenderedScreenshotScene: UIViewControllerRepresentable {
             content: AnyView(
                 content
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .statusBarHidden(true)
             ),
             onReady: {
                 coordinator.contentDidBecomeReady()
