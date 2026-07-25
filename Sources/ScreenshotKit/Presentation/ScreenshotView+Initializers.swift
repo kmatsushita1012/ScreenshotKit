@@ -7,21 +7,21 @@ import SwiftUI
 
 public extension ScreenshotView where Background == EmptyView, Title == AnyView, Subtitle == AnyView {
     init<Content: View>(
-        title: String,
-        subtitle: String,
+        title: String.LocalizationValue,
+        subtitle: String.LocalizationValue,
         @ViewBuilder content: @escaping () -> Content
     ) {
         self.init(
             title: {
                 AnyView(
-                    Text(title)
+                    Text(String(localized: title))
                         .font(ScreenshotDefaultTextStyle.titleFont)
                         .fontWeight(.bold)
                 )
             },
             subtitle: {
                 AnyView(
-                    Text(subtitle)
+                    Text(String(localized: subtitle))
                         .font(ScreenshotDefaultTextStyle.subtitleFont)
                         .foregroundStyle(.secondary)
                 )
@@ -53,8 +53,8 @@ private enum ScreenshotDefaultTextStyle {
 
 public extension ScreenshotView where Background == EmptyView, Title == AnyView, Subtitle == AnyView {
     init(
-        title: String,
-        subtitle: String,
+        title: String.LocalizationValue,
+        subtitle: String.LocalizationValue,
         image: ScreenshotImage,
         imageBundle: Bundle? = .main,
         showsDynamicIsland: Bool = false
@@ -62,14 +62,14 @@ public extension ScreenshotView where Background == EmptyView, Title == AnyView,
         self.init(
             title: {
                 AnyView(
-                    Text(title)
+                    Text(String(localized: title))
                         .font(ScreenshotDefaultTextStyle.titleFont)
                         .fontWeight(.bold)
                 )
             },
             subtitle: {
                 AnyView(
-                    Text(subtitle)
+                    Text(String(localized: subtitle))
                         .font(ScreenshotDefaultTextStyle.subtitleFont)
                         .foregroundStyle(.secondary)
                 )
@@ -86,8 +86,8 @@ public extension ScreenshotView where Background == EmptyView, Title == AnyView,
 
     @available(*, deprecated, message: "Use init(title:subtitle:image:imageBundle:) with ScreenshotImage.")
     init(
-        title: String,
-        subtitle: String,
+        title: String.LocalizationValue,
+        subtitle: String.LocalizationValue,
         image assetName: String,
         imageBundle: Bundle? = .main,
         showsDynamicIsland: Bool = false
@@ -95,14 +95,14 @@ public extension ScreenshotView where Background == EmptyView, Title == AnyView,
         self.init(
             title: {
                 AnyView(
-                    Text(title)
+                    Text(String(localized: title))
                         .font(ScreenshotDefaultTextStyle.titleFont)
                         .fontWeight(.bold)
                 )
             },
             subtitle: {
                 AnyView(
-                    Text(subtitle)
+                    Text(String(localized: subtitle))
                         .font(ScreenshotDefaultTextStyle.subtitleFont)
                         .foregroundStyle(.secondary)
                 )

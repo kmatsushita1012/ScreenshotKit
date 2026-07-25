@@ -6,8 +6,8 @@ struct MemoListScreenshot: ScreenshotItem {
 
     var body: some View {
         ScreenshotView(
-            title: String(localized: "screenshot.memoList.title"),
-            subtitle: String(localized: "screenshot.memoList.subtitle")
+            title: "screenshot.memoList.title",
+            subtitle: "screenshot.memoList.subtitle"
         ) {
             MemoListView(memos: Memo.screenshotList)
         }
@@ -35,8 +35,8 @@ struct MemoEditScreenshot: ScreenshotItem {
 
     var body: some View {
         ScreenshotView(
-            title: String(localized: "screenshot.memoEdit.title"),
-            subtitle: String(localized: "screenshot.memoEdit.subtitle")
+            title: "screenshot.memoEdit.title",
+            subtitle: "screenshot.memoEdit.subtitle"
         ) {
             MemoEditView(memo: Memo.screenshotDraft)
         }
@@ -65,8 +65,8 @@ struct MemoPreviewScreenshot: ScreenshotItem {
 
     var body: some View {
         ScreenshotView(
-            title: String(localized: "screenshot.memoPreview.title"),
-            subtitle: String(localized: "screenshot.memoPreview.subtitle"),
+            title: "screenshot.memoPreview.title",
+            subtitle: "screenshot.memoPreview.subtitle",
             image: .init(phone: "MemoPreviewPhone", pad: "MemoPreviewPad")
         )
         .background(
