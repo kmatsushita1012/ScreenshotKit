@@ -26,7 +26,7 @@ ScreenshotKit は、スクショ制作を「アプリ本体とは別の作業」
 - iOS 17 以降
 - Swift 6
 - Xcode 26 以降
-- `xcrun`, `xcodebuild`, `python3` が使えること
+- `curl`, `tar`, `shasum`, `xcrun`, `xcodebuild`, `python3` が使えること
 
 ### 1. パッケージを追加する
 
@@ -40,7 +40,7 @@ https://github.com/kmatsushita1012/ScreenshotKit.git
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/kmatsushita1012/ScreenshotKit.git", from: "1.3.1")
+    .package(url: "https://github.com/kmatsushita1012/ScreenshotKit.git", from: "1.3.2")
 ]
 ```
 
@@ -80,11 +80,14 @@ struct HomeScreenshot: ScreenshotItem {
 
 ### 3. exporter を実行する
 
-このパッケージのリポジトリ上で次を実行します。
+任意のディレクトリで次を実行します。
 
 ```bash
-swift run screenshotkit-export --project ExampleApp/ExampleApp.xcodeproj --output-dir ./output
+curl -fsSL https://raw.githubusercontent.com/kmatsushita1012/ScreenshotKit/main/scripts/install_screenshotkit_export.sh | bash -s -- 1.3.2
+screenshotkit-export --project ExampleApp/ExampleApp.xcodeproj --output-dir ./output
 ```
+
+installer は現在の macOS architecture 向けの prebuilt executable をダウンロードし、checksum を検証して `~/.local/bin` に配置します。ScreenshotKit の clone もローカル compile も不要です。
 
 別アプリを書き出すときは `--project` に対象の `.xcodeproj` を渡してください。
 
@@ -232,9 +235,9 @@ struct AlarmScreenshot: ScreenshotItem {
 exporter は位置引数と named option の両方に対応しています。
 
 ```bash
-swift run screenshotkit-export [output-dir] [device-id]
-swift run screenshotkit-export --output-dir ./output --device-id <simulator-udid>
-swift run screenshotkit-export --project path/to/App.xcodeproj
+screenshotkit-export [output-dir] [device-id]
+screenshotkit-export --output-dir ./output --device-id <simulator-udid>
+screenshotkit-export --project path/to/App.xcodeproj
 ```
 
 exporter は利用可能なアプリプロジェクトを見つけ、最新の iOS runtime から代表的な iPhone / iPad Simulator を選び、app bundle に含まれる各 locale ごとに書き出し、device ごとの manifest を出力先へ保存します。

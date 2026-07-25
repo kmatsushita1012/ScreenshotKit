@@ -26,7 +26,7 @@ ScreenshotKit is built for teams that want App Store screenshots to live next to
 - iOS 17 or later
 - Swift 6
 - Xcode 26 or later
-- `xcrun`, `xcodebuild`, and `python3`
+- `curl`, `tar`, `shasum`, `xcrun`, `xcodebuild`, and `python3`
 
 ### 1. Add the package
 
@@ -40,7 +40,7 @@ Or in `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/kmatsushita1012/ScreenshotKit.git", from: "1.3.1")
+    .package(url: "https://github.com/kmatsushita1012/ScreenshotKit.git", from: "1.3.2")
 ]
 ```
 
@@ -80,13 +80,16 @@ struct HomeScreenshot: ScreenshotItem {
 
 ### 3. Run the exporter
 
-From this package repository:
+From any directory:
 
 ```bash
-swift run screenshotkit-export --project ExampleApp/ExampleApp.xcodeproj --output-dir ./output
+curl -fsSL https://raw.githubusercontent.com/kmatsushita1012/ScreenshotKit/main/scripts/install_screenshotkit_export.sh | bash -s -- 1.3.2
+screenshotkit-export --project ExampleApp/ExampleApp.xcodeproj --output-dir ./output
 ```
 
-When exporting another app, point `--project` at that app's `.xcodeproj`.
+The installer downloads the prebuilt executable for the current macOS architecture, verifies its checksum, and installs it into `~/.local/bin`. It does not clone the repository or compile locally.
+
+When exporting another app, pass that app's `.xcodeproj` to `--project`.
 
 ## Specification
 
@@ -230,9 +233,9 @@ If the same asset is valid for both device kinds, pass the same name twice.
 The exporter supports positional arguments and named options:
 
 ```bash
-swift run screenshotkit-export [output-dir] [device-id]
-swift run screenshotkit-export --output-dir ./output --device-id <simulator-udid>
-swift run screenshotkit-export --project path/to/App.xcodeproj
+screenshotkit-export [output-dir] [device-id]
+screenshotkit-export --output-dir ./output --device-id <simulator-udid>
+screenshotkit-export --project path/to/App.xcodeproj
 ```
 
 The executable discovers a usable app project, picks flagship iPhone and iPad simulators from the latest available iOS runtime, launches each locale declared by the app bundle, and writes one manifest per device into the output directory.

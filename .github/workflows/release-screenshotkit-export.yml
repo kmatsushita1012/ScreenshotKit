@@ -1,0 +1,64 @@
+name: Release screenshotkit-export
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to build and upload assets for
+        required: true
+        default: v1.3.2
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - architecture: arm64
+            triple: arm64-apple-macosx13.0
+          - architecture: x86_64
+            triple: x86_64-apple-macosx13.0
+
+    steps:
+      - name: Check out release source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.event.release.tag_name }}
+
+      - name: Build and upload executable
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARCHITECTURE: ${{ matrix.architecture }}
+          TRIPLE: ${{ matrix.triple }}
+          TAG_NAME: ${{ inputs.tag || github.event.release.tag_name }}
+        run: |
+          scratch_path=".build/release-${ARCHITECTURE}"
+          swift build \
+            --configuration release \
+            --triple "$TRIPLE" \
+            --scratch-path "$scratch_path" \
+            --product screenshotkit-export
+
+          binary_path="$(swift build \
+            --configuration release \
+            --triple "$TRIPLE" \
+            --scratch-path "$scratch_path" \
+            --show-bin-path)/screenshotkit-export"
+          asset_name="screenshotkit-export-${TAG_NAME}-macos-${ARCHITECTURE}.tar.gz"
+
+          tar -C "$(dirname "$binary_path")" \
+            -czf "$asset_name" \
+            "$(basename "$binary_path")"
+          shasum -a 256 "$asset_name" > "${asset_name}.sha256"
+
+          gh release upload "$TAG_NAME" \
+            "$asset_name" \
+            "${asset_name}.sha256" \
+            --clobber \
+            --repo "$GITHUB_REPOSITORY"
