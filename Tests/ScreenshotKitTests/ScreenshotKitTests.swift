@@ -253,6 +253,21 @@ func screenshotStyleModifierAcceptsBuiltinShortSyntax() {
 
 @Test
 @MainActor
+func screenshotViewAcceptsLocalizationValuesFromStringLiterals() {
+    let view = ScreenshotView(
+        title: "screenshot.title",
+        subtitle: "screenshot.subtitle"
+    ) {
+        Color.red
+    }
+
+    let erased = AnyView(view)
+
+    #expect(type(of: erased) == AnyView.self)
+}
+
+@Test
+@MainActor
 func screenshotStyleModifierAcceptsCustomStyle() {
     let view = ScreenshotView(
         title: "Title",
