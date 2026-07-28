@@ -106,26 +106,23 @@ final class ScreenshotContainerViewModel: ObservableObject {
     @Published private(set) var totalCount = 0
 
     private let registry: ScreenshotRegistry
-    private let launchEnvironmentParser: any ScreenshotLaunchEnvironmentParserProtocol
     private let handleUseCase: any HandleScreenshotCommandUseCaseProtocol
     private let progressStore: any ScreenshotProgressStoreProtocol
 
-    private var hasProcessedLaunchEnvironment = false
+    private let initialRoute: ScreenshotRoute?
+    private var hasStarted = false
     private var activeReadinessKey: String?
-    private var pendingLaunchRoute: ScreenshotRoute?
 
     init(
         registry: ScreenshotRegistry,
-        launchEnvironmentParser: any ScreenshotLaunchEnvironmentParserProtocol,
         handleUseCase: any HandleScreenshotCommandUseCaseProtocol,
         progressStore: any ScreenshotProgressStoreProtocol,
         initialRoute: ScreenshotRoute? = nil
     ) {
         self.registry = registry
-        self.launchEnvironmentParser = launchEnvironmentParser
         self.handleUseCase = handleUseCase
         self.progressStore = progressStore
-        self.pendingLaunchRoute = initialRoute
+        self.initialRoute = initialRoute
         isScreenshotMode = initialRoute != nil
     }
 
@@ -140,7 +137,6 @@ final class ScreenshotContainerViewModel: ObservableObject {
 
         self.init(
             registry: registry,
-            launchEnvironmentParser: ScreenshotLaunchEnvironmentParser(),
             handleUseCase: HandleScreenshotCommandUseCase(
                 progressStore: progressStore,
                 localeProvider: ScreenshotLocaleProvider()
@@ -150,19 +146,16 @@ final class ScreenshotContainerViewModel: ObservableObject {
         )
     }
 
-    func handleLaunchEnvironmentIfNeeded(processInfo: ProcessInfo = .processInfo) {
-        guard !hasProcessedLaunchEnvironment else { return }
-        hasProcessedLaunchEnvironment = true
+    func startIfNeeded() {
+        guard !hasStarted else { return }
+        hasStarted = true
 
-        let route = pendingLaunchRoute ?? launchEnvironmentParser.parse(processInfo: processInfo)
-        pendingLaunchRoute = nil
-
-        guard let route else {
+        guard let initialRoute else {
             return
         }
 
         print("ScreenshotKit autostart detected from ProcessInfo")
-        process(command: route.command)
+        process(command: initialRoute.command)
     }
 
     func sceneDidBecomeReady(_ readiness: ScreenshotSceneReadiness) {
@@ -338,7 +331,7 @@ public struct ScreenshotContainerView<Content: View>: View {
             }
         }
         .task {
-            viewModel.handleLaunchEnvironmentIfNeeded()
+            viewModel.startIfNeeded()
         }
     }
 }
