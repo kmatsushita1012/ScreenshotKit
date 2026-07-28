@@ -64,6 +64,12 @@ public extension View {
 
 private struct ScreenshotModifier: ViewModifier {
     let items: [any ScreenshotItem]
+    let initialRoute: ScreenshotRoute?
+
+    init(items: [any ScreenshotItem]) {
+        self.items = items
+        initialRoute = ScreenshotLaunchEnvironmentParser().parse(processInfo: .processInfo)
+    }
 
     func body(content: Content) -> some View {
 #if canImport(UIKit)
@@ -77,7 +83,8 @@ private struct ScreenshotModifier: ViewModifier {
 
         return ScreenshotContainerView(
             content: content,
-            registry: registry
+            registry: registry,
+            initialRoute: initialRoute
         )
 #else
         content
@@ -105,20 +112,27 @@ final class ScreenshotContainerViewModel: ObservableObject {
 
     private var hasProcessedLaunchEnvironment = false
     private var activeReadinessKey: String?
+    private var pendingLaunchRoute: ScreenshotRoute?
 
     init(
         registry: ScreenshotRegistry,
         launchEnvironmentParser: any ScreenshotLaunchEnvironmentParserProtocol,
         handleUseCase: any HandleScreenshotCommandUseCaseProtocol,
-        progressStore: any ScreenshotProgressStoreProtocol
+        progressStore: any ScreenshotProgressStoreProtocol,
+        initialRoute: ScreenshotRoute? = nil
     ) {
         self.registry = registry
         self.launchEnvironmentParser = launchEnvironmentParser
         self.handleUseCase = handleUseCase
         self.progressStore = progressStore
+        self.pendingLaunchRoute = initialRoute
+        isScreenshotMode = initialRoute != nil
     }
 
-    convenience init(registry: ScreenshotRegistry) {
+    convenience init(
+        registry: ScreenshotRegistry,
+        initialRoute: ScreenshotRoute? = nil
+    ) {
         let progressStore = ScreenshotProgressStore(
             fileClient: FileClient(),
             stateFileLocator: ScreenshotStateFileLocator()
@@ -131,7 +145,8 @@ final class ScreenshotContainerViewModel: ObservableObject {
                 progressStore: progressStore,
                 localeProvider: ScreenshotLocaleProvider()
             ),
-            progressStore: progressStore
+            progressStore: progressStore,
+            initialRoute: initialRoute
         )
     }
 
@@ -139,7 +154,10 @@ final class ScreenshotContainerViewModel: ObservableObject {
         guard !hasProcessedLaunchEnvironment else { return }
         hasProcessedLaunchEnvironment = true
 
-        guard let route = launchEnvironmentParser.parse(processInfo: processInfo) else {
+        let route = pendingLaunchRoute ?? launchEnvironmentParser.parse(processInfo: processInfo)
+        pendingLaunchRoute = nil
+
+        guard let route else {
             return
         }
 
@@ -288,13 +306,15 @@ public struct ScreenshotContainerView<Content: View>: View {
 
     init(
         content: Content,
-        registry: ScreenshotRegistry
+        registry: ScreenshotRegistry,
+        initialRoute: ScreenshotRoute?
     ) {
         self.content = content
         self.registry = registry
         _viewModel = StateObject(
             wrappedValue: ScreenshotContainerViewModel(
-                registry: registry
+                registry: registry,
+                initialRoute: initialRoute
             )
         )
     }
