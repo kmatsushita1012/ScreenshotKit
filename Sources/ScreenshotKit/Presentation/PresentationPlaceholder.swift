@@ -64,6 +64,12 @@ public extension View {
 
 private struct ScreenshotModifier: ViewModifier {
     let items: [any ScreenshotItem]
+    let initialRoute: ScreenshotRoute?
+
+    init(items: [any ScreenshotItem]) {
+        self.items = items
+        initialRoute = ScreenshotLaunchEnvironmentParser().parse(processInfo: .processInfo)
+    }
 
     func body(content: Content) -> some View {
 #if canImport(UIKit)
@@ -77,7 +83,8 @@ private struct ScreenshotModifier: ViewModifier {
 
         return ScreenshotContainerView(
             content: content,
-            registry: registry
+            registry: registry,
+            initialRoute: initialRoute
         )
 #else
         content
@@ -99,26 +106,30 @@ final class ScreenshotContainerViewModel: ObservableObject {
     @Published private(set) var totalCount = 0
 
     private let registry: ScreenshotRegistry
-    private let launchEnvironmentParser: any ScreenshotLaunchEnvironmentParserProtocol
     private let handleUseCase: any HandleScreenshotCommandUseCaseProtocol
     private let progressStore: any ScreenshotProgressStoreProtocol
 
-    private var hasProcessedLaunchEnvironment = false
+    private let initialRoute: ScreenshotRoute?
+    private var hasStarted = false
     private var activeReadinessKey: String?
 
     init(
         registry: ScreenshotRegistry,
-        launchEnvironmentParser: any ScreenshotLaunchEnvironmentParserProtocol,
         handleUseCase: any HandleScreenshotCommandUseCaseProtocol,
-        progressStore: any ScreenshotProgressStoreProtocol
+        progressStore: any ScreenshotProgressStoreProtocol,
+        initialRoute: ScreenshotRoute? = nil
     ) {
         self.registry = registry
-        self.launchEnvironmentParser = launchEnvironmentParser
         self.handleUseCase = handleUseCase
         self.progressStore = progressStore
+        self.initialRoute = initialRoute
+        isScreenshotMode = initialRoute != nil
     }
 
-    convenience init(registry: ScreenshotRegistry) {
+    convenience init(
+        registry: ScreenshotRegistry,
+        initialRoute: ScreenshotRoute? = nil
+    ) {
         let progressStore = ScreenshotProgressStore(
             fileClient: FileClient(),
             stateFileLocator: ScreenshotStateFileLocator()
@@ -126,25 +137,25 @@ final class ScreenshotContainerViewModel: ObservableObject {
 
         self.init(
             registry: registry,
-            launchEnvironmentParser: ScreenshotLaunchEnvironmentParser(),
             handleUseCase: HandleScreenshotCommandUseCase(
                 progressStore: progressStore,
                 localeProvider: ScreenshotLocaleProvider()
             ),
-            progressStore: progressStore
+            progressStore: progressStore,
+            initialRoute: initialRoute
         )
     }
 
-    func handleLaunchEnvironmentIfNeeded(processInfo: ProcessInfo = .processInfo) {
-        guard !hasProcessedLaunchEnvironment else { return }
-        hasProcessedLaunchEnvironment = true
+    func startIfNeeded() {
+        guard !hasStarted else { return }
+        hasStarted = true
 
-        guard let route = launchEnvironmentParser.parse(processInfo: processInfo) else {
+        guard let initialRoute else {
             return
         }
 
         print("ScreenshotKit autostart detected from ProcessInfo")
-        process(command: route.command)
+        process(command: initialRoute.command)
     }
 
     func sceneDidBecomeReady(_ readiness: ScreenshotSceneReadiness) {
@@ -288,13 +299,15 @@ public struct ScreenshotContainerView<Content: View>: View {
 
     init(
         content: Content,
-        registry: ScreenshotRegistry
+        registry: ScreenshotRegistry,
+        initialRoute: ScreenshotRoute?
     ) {
         self.content = content
         self.registry = registry
         _viewModel = StateObject(
             wrappedValue: ScreenshotContainerViewModel(
-                registry: registry
+                registry: registry,
+                initialRoute: initialRoute
             )
         )
     }
@@ -318,7 +331,7 @@ public struct ScreenshotContainerView<Content: View>: View {
             }
         }
         .task {
-            viewModel.handleLaunchEnvironmentIfNeeded()
+            viewModel.startIfNeeded()
         }
     }
 }
